@@ -174,7 +174,7 @@
             padding: 6px;
         }
 
-        /* 🧱 바둑판 외곽 전체에 정갈한 외곽 테두리 적용 */
+        /* 🧱 바둑판 외곽 테두리 */
         .board-wrapper {
             width: 100%;
             max-height: 100%;
@@ -198,7 +198,6 @@
             cursor: not-allowed;
         }
 
-        /* 📏 해상도 뭉개짐 없는 칼 같은 균일 선 렌더링 패치 */
         .intersection {
             position: relative;
             cursor: pointer;
@@ -208,7 +207,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 픽셀 매칭 오류 방지를 위해 가로세로 중앙선을 절대 보더 방식으로 교체 */
         .intersection::before {
             content: '';
             position: absolute;
@@ -229,7 +227,6 @@
             z-index: 1;
         }
 
-        /* 가장자리 선들이 넘치지 않고 균일하게 잘리도록 보정 */
         .intersection.edge-top::after { top: 50%; }
         .intersection.edge-bottom::after { bottom: 50%; }
         .intersection.edge-left::before { left: 50%; }
@@ -447,6 +444,9 @@
     let previewStoneEl = null; 
     let starPoints = [];
 
+    // 🌟 추가된 부분: 불필요한 새로고침을 막기 위해 이전 상태를 기억하는 변수 🌟
+    let lastRenderHash = ""; 
+
     const dr = [-1, 1, 0, 0]; const dc = [0, 0, -1, 1];
 
     const boardElement = document.getElementById('board');
@@ -534,7 +534,15 @@
         }
 
         updateStarPoints();
-        renderBoardFromState();
+        
+        // 🌟 핵심 해결 로직: 진짜 데이터가 변했을 때만 렌더링 실행 🌟
+        const currentRenderHash = (data.gameMode || 'baduk') + data.gameState + data.currentTurn + JSON.stringify(data.lastMove || null);
+        
+        if (lastRenderHash !== currentRenderHash) {
+            renderBoardFromState();
+            lastRenderHash = currentRenderHash; // 렌더링 후 상태 갱신
+        }
+        
         updateStatus();
     });
 
@@ -548,9 +556,12 @@
     }
 
     function renderBoardFromState() {
+        const prevSelected = selectedCell;
+
         boardElement.innerHTML = '';
         boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 1fr)`;
         boardElement.style.gridTemplateRows = `repeat(${boardSize}, 1fr)`;
+        
         if (previewStoneEl) previewStoneEl = null;
         selectedCell = null;
 
@@ -580,6 +591,13 @@
                     intersection.appendChild(stone);
                 } else {
                     intersection.addEventListener('click', () => selectIntersection(r, c, intersection));
+
+                    if (prevSelected && prevSelected.r === r && prevSelected.c === c && currentTurn === myRole) {
+                        selectedCell = { r: r, c: c, element: intersection };
+                        previewStoneEl = document.createElement('div');
+                        previewStoneEl.classList.add('preview-stone', currentTurn);
+                        intersection.appendChild(previewStoneEl);
+                    }
                 }
                 boardElement.appendChild(intersection);
             }
@@ -876,4 +894,3 @@
 
 </body>
 </html>
-
