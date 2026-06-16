@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -208,7 +209,7 @@
             padding: 6px;
         }
 
-        /* 회원님이 제공해주신 완벽한 오리지널 보더 방식 100% 유지 */
+        /* 오리지널 바둑판 CSS 유지 */
         .board-wrapper {
             width: 100%;
             max-height: 100%;
@@ -497,10 +498,12 @@
     let timerInterval = null;
     let lastSpokenSeconds = -1;
 
+    // 🔥 깜빡임 방지용 캐시 메모리 변수
     let cachedGameStateJson = "";
     let cachedLastMoveJson = "";
     let cachedGameMode = "";
-    
+    let cachedGameStarted = false; // 🚨 추가: 게임 시작 여부 캐시! 이거 때문에 클릭이 안됐음!
+
     let selectedCell = null; 
     let previewStoneEl = null; 
     let starPoints = [];
@@ -568,16 +571,20 @@
         const currentMode = data.gameMode || 'baduk';
         const currentGameStateJson = data.gameState || JSON.stringify(Array(currentMode === 'omok' ? 15 : 19).fill(null).map(() => Array(currentMode === 'omok' ? 15 : 19).fill(null)));
         const currentLastMoveJson = JSON.stringify(data.lastMove || null);
+        const currentGameStarted = data.gameStarted || false; // 🚨 추가: 현재 서버의 게임 시작 상태 가져오기
 
-        if (currentMode !== cachedGameMode || currentGameStateJson !== cachedGameStateJson || currentLastMoveJson !== cachedLastMoveJson) {
+        // 🚨 핵심 수정! 게임 시작 상태가 변했을 때(양쪽 모두 준비를 눌렀을 때) 바둑판을 새로 그려서 잠금을 풀어줌!
+        if (currentMode !== cachedGameMode || currentGameStateJson !== cachedGameStateJson || currentLastMoveJson !== cachedLastMoveJson || currentGameStarted !== cachedGameStarted) {
             gameMode = currentMode;
             boardSize = (gameMode === 'omok') ? 15 : 19;
             gameState = JSON.parse(currentGameStateJson);
             lastMove = data.lastMove || null;
+            gameStarted = currentGameStarted; // 렌더링 전 잠금 해제 설정
 
             cachedGameMode = currentMode;
             cachedGameStateJson = currentGameStateJson;
             cachedLastMoveJson = currentLastMoveJson;
+            cachedGameStarted = currentGameStarted;
 
             updateStarPoints();
             renderBoardFromState();
@@ -586,7 +593,6 @@
         currentTurn = data.currentTurn;
         capturedStones = data.capturedStones || { black: 0, white: 0 };
         koCoordinate = data.koCoordinate;
-        gameStarted = data.gameStarted || false;
         readies = data.readies || { black: false, white: false };
         timers = data.timers || timers;
 
@@ -716,15 +722,6 @@
 
         boxTimerBlack.classList.toggle('active-timer', gameStarted && currentTurn === 'black');
         boxTimerWhite.classList.toggle('active-timer', gameStarted && currentTurn === 'white');
-    }
-
-    function copyShareLink() {
-        const perfectUrl = window.location.origin + window.location.pathname + `?room=${roomId}`;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(perfectUrl).then(() => {
-                alert("🚀 링크 복사 완료! 카톡방에 공유하세요.");
-            }).catch(() => { prompt("링크 주소:", perfectUrl); });
-        } else { prompt("링크 주소:", perfectUrl); }
     }
 
     function renderBoardFromState() {
@@ -883,6 +880,15 @@
         }
     }
 
+    function copyShareLink() {
+        const perfectUrl = window.location.origin + window.location.pathname + `?room=${roomId}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(perfectUrl).then(() => {
+                alert("🚀 링크 복사 완료! 카톡방에 공유하세요.");
+            }).catch(() => { prompt("링크 주소:", perfectUrl); });
+        } else { prompt("링크 주소:", perfectUrl); }
+    }
+
     function checkRenjuFouls(row, col) {
         for (let i = 0; i < 4; i++) { if (countContinuous(row, col, i, 'black') >= 6) { alert("🚫 [금수] 6목 이상의 장선은 금지되어 있습니다!"); return true; } }
         if (isThreeThreeWithArrayFix(row, col)) { alert("🚫 [금수] 쌍삼(3-3) 자리는 착수할 수 없습니다!"); return true; }
@@ -1007,7 +1013,6 @@
         }
 
         btnReady.style.display = "none"; 
-        // 🏳️ 게임 시작 시, 대기 버튼이 사라지고 기권(리셋) 버튼 노출
         if (myRole !== 'spectator') {
             btnReset.style.display = "block";
         }
@@ -1055,6 +1060,7 @@
 
         cachedGameStateJson = JSON.stringify(gameState);
         cachedLastMoveJson = JSON.stringify(lastMove);
+        cachedGameStarted = false; // 🚨 모드 변경 시 잠금 캐시 리셋
 
         document.getElementById('btnModeBaduk').classList.toggle('active', gameMode === 'baduk');
         document.getElementById('btnModeOmok').classList.toggle('active', gameMode === 'omok');
@@ -1088,6 +1094,7 @@
 
         cachedGameStateJson = JSON.stringify(gameState);
         cachedLastMoveJson = JSON.stringify(lastMove);
+        cachedGameStarted = false; // 🚨 리셋 시 잠금 캐시 리셋
 
         renderBoardFromState(); updateStatus(); renderTimers();
 
