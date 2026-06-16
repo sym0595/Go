@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정석 모바일 바둑 & 오목 (렌주룰 철통 보안판)</title>
+    <title>바둑 & 오목</title>
     <style>
         * {
             box-sizing: border-box;
@@ -60,6 +60,22 @@
         .my-role-badge {
             font-weight: bold;
             color: #e4a853;
+        }
+
+        .status-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        .status-online {
+            background-color: #2ecc71;
+            color: #fff;
+            box-shadow: 0 0 6px #2ecc71;
+        }
+        .status-offline {
+            background-color: #e74c3c;
+            color: #fff;
         }
 
         .btn-share {
@@ -158,14 +174,16 @@
             padding: 6px;
         }
 
+        /* 🧱 바둑판 외곽 전체에 정갈한 외곽 테두리 적용 */
         .board-wrapper {
             width: 100%;
             max-height: 100%;
             aspect-ratio: 1;
             background-color: #e4a853;
             border-radius: 4px;
-            padding: 6px;
+            padding: 8px;
             box-shadow: inset 0 0 8px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.3);
+            border: 1px solid #443016; 
         }
 
         .board {
@@ -180,6 +198,7 @@
             cursor: not-allowed;
         }
 
+        /* 📏 해상도 뭉개짐 없는 칼 같은 균일 선 렌더링 패치 */
         .intersection {
             position: relative;
             cursor: pointer;
@@ -189,28 +208,32 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* 픽셀 매칭 오류 방지를 위해 가로세로 중앙선을 절대 보더 방식으로 교체 */
         .intersection::before {
             content: '';
             position: absolute;
-            width: 100%;
-            height: 1px;
-            background-color: #443016;
+            left: 0;
+            right: 0;
+            height: 0;
+            border-top: 1px solid #443016;
             z-index: 1;
         }
 
         .intersection::after {
             content: '';
             position: absolute;
-            width: 1px;
-            height: 100%;
-            background-color: #443016;
+            top: 0;
+            bottom: 0;
+            width: 0;
+            border-left: 1px solid #443016;
             z-index: 1;
         }
 
-        .intersection.edge-top::after { height: 50%; top: 50%; }
-        .intersection.edge-bottom::after { height: 50%; bottom: 50%; }
-        .intersection.edge-left::before { width: 50%; left: 50%; }
-        .intersection.edge-right::before { width: 50%; right: 50%; }
+        /* 가장자리 선들이 넘치지 않고 균일하게 잘리도록 보정 */
+        .intersection.edge-top::after { top: 50%; }
+        .intersection.edge-bottom::after { bottom: 50%; }
+        .intersection.edge-left::before { left: 50%; }
+        .intersection.edge-right::before { right: 50%; }
 
         .intersection.star-point {
             background-image: radial-gradient(circle, #443016 1.5px, transparent 2px);
@@ -219,6 +242,7 @@
         }
 
         .stone {
+            position: relative;
             width: 96%;
             height: 96%;
             border-radius: 50%;
@@ -231,6 +255,29 @@
         .stone.placed { transform: scale(1); }
         .stone.black { background: radial-gradient(circle at 30% 30%, #444, #111 70%); }
         .stone.white { background: radial-gradient(circle at 30% 30%, #fff, #ddd 70%); border: 0.5px solid #bbb; }
+
+        .stone.black.last-move::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background-color: #ffffff;
+        }
+        .stone.white.last-move::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background-color: #111111;
+        }
 
         .preview-stone {
             width: 92%;
@@ -307,8 +354,8 @@
 <div class="phone-container">
     <div class="status-bar">
         <div class="network-row">
-            <span>내 역할: <span id="txtMyRole" class="my-role-badge">연결 중</span></span>
-            <button class="btn-share" onclick="copyShareLink()">🔗 대국 링크 복사</button>
+            <span>역할: <span id="txtMyRole" class="my-role-badge">연결 중</span></span>
+            <span id="txtOpponentStatus" class="status-badge status-offline">🔴 상대방 대기 중</span>
         </div>
         
         <div class="mode-selector-row">
@@ -317,6 +364,7 @@
                 <button id="btnModeBaduk" class="btn-role active" onclick="syncGameMode('baduk')">바둑 (19칸)</button>
                 <button id="btnModeOmok" class="btn-role" onclick="syncGameMode('omok')">오목 (렌주룰)</button>
             </div>
+            <button class="btn-share" onclick="copyShareLink()">🔗 링크 복사</button>
         </div>
 
         <div class="turn-row">
@@ -393,6 +441,7 @@
     let koCoordinate = null; 
     const komi = 6.5;
     let capturedStones = { black: 0, white: 0 }; 
+    let lastMove = null; 
     
     let selectedCell = null; 
     let previewStoneEl = null; 
@@ -410,6 +459,7 @@
     const lblKomi = document.getElementById('lblKomi');
     const lblCapture = document.getElementById('lblCapture');
     const btnCounting = document.getElementById('btnCounting');
+    const txtOpponentStatus = document.getElementById('txtOpponentStatus');
 
     function updateStarPoints() {
         starPoints = [];
@@ -422,6 +472,13 @@
     updateStatus();
 
     let roomRef = database.ref('go_rooms/' + roomId);
+    
+    setInterval(() => {
+        if (myRole !== 'spectator') {
+            roomRef.child('presence/' + myRole).set(Date.now());
+        }
+    }, 2000);
+
     roomRef.on('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) {
@@ -431,6 +488,7 @@
                 currentTurn: currentTurn,
                 capturedStones: capturedStones,
                 koCoordinate: null,
+                lastMove: null,
                 players: { black: userToken }
             });
             return;
@@ -444,7 +502,6 @@
         gameMode = data.gameMode || 'baduk';
         const targetSize = (gameMode === 'omok') ? 15 : 19;
         
-        // 🔄 데이터 보정 버그 완벽 패치
         if (boardSize !== targetSize || !gameState || gameState.length !== targetSize) {
             boardSize = targetSize;
             gameState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
@@ -454,6 +511,27 @@
         currentTurn = data.currentTurn;
         capturedStones = data.capturedStones || { black: 0, white: 0 };
         koCoordinate = data.koCoordinate;
+        lastMove = data.lastMove || null; 
+
+        if (data.players && data.presence) {
+            const opponentRole = (myRole === 'black') ? 'white' : 'black';
+            const opponentHasToken = data.players[opponentRole];
+            const lastPing = data.presence[opponentRole];
+            const now = Date.now();
+
+            if (opponentHasToken) {
+                if (lastPing && (now - lastPing < 6000)) {
+                    txtOpponentStatus.textContent = `🟢 ${opponentRole === 'white' ? '백돌' : '흑돌'} 입장 완료`;
+                    txtOpponentStatus.className = "status-badge status-online";
+                } else {
+                    txtOpponentStatus.textContent = "🔴 상대방 오프라인";
+                    txtOpponentStatus.className = "status-badge status-offline";
+                }
+            } else {
+                txtOpponentStatus.textContent = "🔴 상대방 대기 중";
+                txtOpponentStatus.className = "status-badge status-offline";
+            }
+        }
 
         updateStarPoints();
         renderBoardFromState();
@@ -494,6 +572,11 @@
                 if (gameState && gameState[r] && gameState[r][c] !== null) {
                     const stone = document.createElement('div');
                     stone.classList.add('stone', gameState[r][c], 'placed');
+                    
+                    if (lastMove && lastMove.r === r && lastMove.c === c) {
+                        stone.classList.add('last-move');
+                    }
+                    
                     intersection.appendChild(stone);
                 } else {
                     intersection.addEventListener('click', () => selectIntersection(r, c, intersection));
@@ -518,7 +601,6 @@
         const { r: row, c: col } = selectedCell;
 
         if (gameMode === 'omok') {
-            // 🛡️ [렌주룰 필터 가동 부] 크기 기반으로 치밀하게 차단 계산
             if (currentTurn === 'black') {
                 if (checkRenjuFouls(row, col)) {
                     if (previewStoneEl) { previewStoneEl.remove(); previewStoneEl = null; }
@@ -536,6 +618,7 @@
             }
 
             const opponentTurn = currentTurn === 'black' ? 'white' : 'black';
+            const nextMoveInfo = { r: row, c: col };
             currentTurn = opponentTurn;
 
             updateStatus();
@@ -544,7 +627,7 @@
             if(roomRef) {
                 roomRef.update({
                     gameState: JSON.stringify(gameState), currentTurn: opponentTurn,
-                    capturedStones: capturedStones, koCoordinate: null
+                    capturedStones: capturedStones, koCoordinate: null, lastMove: nextMoveInfo
                 }).catch(()=>{});
             }
 
@@ -589,6 +672,7 @@
                 nextKo = { r: currentCaptured[0].r, c: currentCaptured[0].c };
             }
 
+            const nextMoveInfo = { r: row, c: col };
             currentTurn = opponentTurn;
             updateStatus();
             renderBoardFromState();
@@ -596,13 +680,12 @@
             if(roomRef) {
                 roomRef.update({
                     gameState: JSON.stringify(gameState), currentTurn: opponentTurn,
-                    capturedStones: capturedStones, koCoordinate: nextKo
+                    capturedStones: capturedStones, koCoordinate: nextKo, lastMove: nextMoveInfo
                 }).catch(()=>{});
             }
         }
     }
 
-    // 🕵️ 렌주룰 판단 엔진 디버깅 완료
     function checkRenjuFouls(row, col) {
         for (let i = 0; i < 4; i++) { if (countContinuous(row, col, i, 'black') >= 6) { alert("🚫 [금수] 6목 이상의 장선은 금지되어 있습니다!"); return true; } }
         if (isThreeThreeWithArrayFix(row, col)) { alert("🚫 [금수] 쌍삼(3-3) 자리는 착수할 수 없습니다!"); return true; }
@@ -729,7 +812,7 @@
         const size = mode === 'omok' ? 15 : 19;
         gameMode = mode; boardSize = size;
         gameState = Array(size).fill(null).map(() => Array(size).fill(null));
-        currentTurn = 'black'; capturedStones = { black: 0, white: 0 }; koCoordinate = null;
+        currentTurn = 'black'; capturedStones = { black: 0, white: 0 }; koCoordinate = null; lastMove = null;
 
         document.getElementById('btnModeBaduk').classList.toggle('active', gameMode === 'baduk');
         document.getElementById('btnModeOmok').classList.toggle('active', gameMode === 'omok');
@@ -739,20 +822,20 @@
         if(roomRef) {
             roomRef.update({
                 gameMode: mode, gameState: JSON.stringify(gameState),
-                currentTurn: 'black', capturedStones: capturedStones, koCoordinate: null
+                currentTurn: 'black', capturedStones: capturedStones, koCoordinate: null, lastMove: null
             }).catch(()=>{});
         }
     }
 
     function syncResetGame() {
         gameState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
-        currentTurn = 'black'; capturedStones = { black: 0, white: 0 }; koCoordinate = null;
+        currentTurn = 'black'; capturedStones = { black: 0, white: 0 }; koCoordinate = null; lastMove = null;
         renderBoardFromState(); updateStatus();
 
         if(roomRef) {
             roomRef.update({
                 gameState: JSON.stringify(gameState), currentTurn: 'black',
-                capturedStones: { black: 0, white: 0 }, koCoordinate: null
+                capturedStones: { black: 0, white: 0 }, koCoordinate: null, lastMove: null
             }).catch(()=>{});
         }
     }
@@ -793,3 +876,4 @@
 
 </body>
 </html>
+
