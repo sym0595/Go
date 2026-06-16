@@ -25,7 +25,7 @@
             width: 100%;
             max-width: 360px;
             height: 94vh;
-            max-height: 640px;
+            max-height: 660px;
             background-color: #1a1a1a;
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
@@ -125,6 +125,40 @@
             color: #1a1a1a;
         }
 
+        .timer-container {
+            display: flex;
+            justify-content: space-between;
+            background-color: #151515;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            border: 1px solid #333;
+        }
+
+        .timer-box {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            width: 48%;
+        }
+        .timer-box.active-timer {
+            border-left: 3px solid #e4a853;
+            padding-left: 4px;
+        }
+        .timer-time {
+            font-size: 15px;
+            font-weight: bold;
+            font-family: monospace;
+            color: #fff;
+        }
+        .timer-box.active-timer .timer-time {
+            color: #e4a853;
+        }
+        .byoyomi-text {
+            font-size: 10px;
+            color: #888;
+        }
+
         .turn-row {
             display: flex;
             justify-content: space-between;
@@ -174,7 +208,7 @@
             padding: 6px;
         }
 
-        /* 🧱 바둑판 외곽 전체에 정갈한 외곽 테두리 적용 */
+        /* 회원님이 제공해주신 완벽한 오리지널 보더 방식 100% 유지 */
         .board-wrapper {
             width: 100%;
             max-height: 100%;
@@ -198,7 +232,6 @@
             cursor: not-allowed;
         }
 
-        /* 📏 해상도 뭉개짐 없는 칼 같은 균일 선 렌더링 패치 */
         .intersection {
             position: relative;
             cursor: pointer;
@@ -208,7 +241,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 픽셀 매칭 오류 방지를 위해 가로세로 중앙선을 절대 보더 방식으로 교체 */
         .intersection::before {
             content: '';
             position: absolute;
@@ -229,7 +261,6 @@
             z-index: 1;
         }
 
-        /* 가장자리 선들이 넘치지 않고 균일하게 잘리도록 보정 */
         .intersection.edge-top::after { top: 50%; }
         .intersection.edge-bottom::after { bottom: 50%; }
         .intersection.edge-left::before { left: 50%; }
@@ -367,10 +398,23 @@
             <button class="btn-share" onclick="copyShareLink()">🔗 링크 복사</button>
         </div>
 
+        <div class="timer-container">
+            <div id="boxTimerBlack" class="timer-box">
+                <span>흑돌 제한시간</span>
+                <span id="timeBlack" class="timer-time">10:00</span>
+                <span id="byoBlack" class="byoyomi-text">초읽기 30초 3회</span>
+            </div>
+            <div id="boxTimerWhite" class="timer-box">
+                <span>백돌 제한시간</span>
+                <span id="timeWhite" class="timer-time">10:00</span>
+                <span id="byoWhite" class="byoyomi-text">초읽기 30초 3회</span>
+            </div>
+        </div>
+
         <div class="turn-row">
             <div class="turn-indicator">
                 <div id="turnBadge" class="turn-badge"></div>
-                <span id="turnText">흑돌 차례</span>
+                <span id="turnText">대국 대기 중</span>
             </div>
             <div id="lblKomi" class="komi-badge">덤 6.5집</div>
         </div>
@@ -390,7 +434,8 @@
         <button id="btnConfirm" class="btn-confirm" onclick="confirmPlacement()">➔ 착수 완료</button>
         <div class="sub-btn-row">
             <button id="btnCounting" class="btn-sub" onclick="requestAutoCounting()">🏁 계가 신청</button>
-            <button class="btn-sub" onclick="syncResetGame()">🔄 판 리셋</button>
+            <button id="btnReady" class="btn-sub" style="background-color: #e67e22; color: white;" onclick="clickReadyBtn()">🛑 대기 중</button>
+            <button id="btnReset" class="btn-sub" style="background-color: #e74c3c; color: white; display: none;" onclick="if(confirm('기권하고 판을 초기화하시겠습니까?')) syncResetGame();">🏳️ 기권(리셋)</button>
         </div>
     </div>
 </div>
@@ -442,6 +487,19 @@
     const komi = 6.5;
     let capturedStones = { black: 0, white: 0 }; 
     let lastMove = null; 
+
+    let gameStarted = false;
+    let readies = { black: false, white: false };
+    let timers = {
+        black: { mainTime: 600, byoTime: 30, byoPeriods: 3, isByo: false },
+        white: { mainTime: 600, byoTime: 30, byoPeriods: 3, isByo: false }
+    };
+    let timerInterval = null;
+    let lastSpokenSeconds = -1;
+
+    let cachedGameStateJson = "";
+    let cachedLastMoveJson = "";
+    let cachedGameMode = "";
     
     let selectedCell = null; 
     let previewStoneEl = null; 
@@ -460,16 +518,21 @@
     const lblCapture = document.getElementById('lblCapture');
     const btnCounting = document.getElementById('btnCounting');
     const txtOpponentStatus = document.getElementById('txtOpponentStatus');
+    const btnReady = document.getElementById('btnReady');
+    const btnReset = document.getElementById('btnReset');
+
+    const timeBlackEl = document.getElementById('timeBlack');
+    const timeWhiteEl = document.getElementById('timeWhite');
+    const byoBlackEl = document.getElementById('byoBlack');
+    const byoWhiteEl = document.getElementById('byoWhite');
+    const boxTimerBlack = document.getElementById('boxTimerBlack');
+    const boxTimerWhite = document.getElementById('boxTimerWhite');
 
     function updateStarPoints() {
         starPoints = [];
         const lines = (boardSize === 19) ? [3, 9, 15] : [3, 7, 11];
         for (let r of lines) for (let c of lines) starPoints.push({r, c});
     }
-
-    updateStarPoints();
-    renderBoardFromState();
-    updateStatus();
 
     let roomRef = database.ref('go_rooms/' + roomId);
     
@@ -489,6 +552,9 @@
                 capturedStones: capturedStones,
                 koCoordinate: null,
                 lastMove: null,
+                gameStarted: false,
+                readies: { black: false, white: false },
+                timers: timers,
                 players: { black: userToken }
             });
             return;
@@ -499,19 +565,30 @@
         else if (!data.players.white) { roomRef.child('players/white').set(userToken); myRole = 'white'; txtMyRole.textContent = "백돌 (나)"; } 
         else { myRole = 'spectator'; txtMyRole.textContent = "관전"; }
 
-        gameMode = data.gameMode || 'baduk';
-        const targetSize = (gameMode === 'omok') ? 15 : 19;
-        
-        if (boardSize !== targetSize || !gameState || gameState.length !== targetSize) {
-            boardSize = targetSize;
-            gameState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+        const currentMode = data.gameMode || 'baduk';
+        const currentGameStateJson = data.gameState || JSON.stringify(Array(currentMode === 'omok' ? 15 : 19).fill(null).map(() => Array(currentMode === 'omok' ? 15 : 19).fill(null)));
+        const currentLastMoveJson = JSON.stringify(data.lastMove || null);
+
+        if (currentMode !== cachedGameMode || currentGameStateJson !== cachedGameStateJson || currentLastMoveJson !== cachedLastMoveJson) {
+            gameMode = currentMode;
+            boardSize = (gameMode === 'omok') ? 15 : 19;
+            gameState = JSON.parse(currentGameStateJson);
+            lastMove = data.lastMove || null;
+
+            cachedGameMode = currentMode;
+            cachedGameStateJson = currentGameStateJson;
+            cachedLastMoveJson = currentLastMoveJson;
+
+            updateStarPoints();
+            renderBoardFromState();
         }
-        
-        gameState = JSON.parse(data.gameState);
+
         currentTurn = data.currentTurn;
         capturedStones = data.capturedStones || { black: 0, white: 0 };
         koCoordinate = data.koCoordinate;
-        lastMove = data.lastMove || null; 
+        gameStarted = data.gameStarted || false;
+        readies = data.readies || { black: false, white: false };
+        timers = data.timers || timers;
 
         if (data.players && data.presence) {
             const opponentRole = (myRole === 'black') ? 'white' : 'black';
@@ -533,10 +610,113 @@
             }
         }
 
-        updateStarPoints();
-        renderBoardFromState();
         updateStatus();
+        renderTimers();
+
+        if (gameStarted) {
+            startLocalTimerLoop();
+        } else {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
     });
+
+    function speakKorean(text) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ko-KR';
+            utterance.rate = 1.2; 
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function clickReadyBtn() {
+        if (myRole === 'spectator') return;
+        const currentReadyState = !readies[myRole];
+        roomRef.child('readies/' + myRole).set(currentReadyState).then(() => {
+            roomRef.once('value', (snap) => {
+                const d = snap.val();
+                if (d && d.readies && d.readies.black && d.readies.white && !d.gameStarted) {
+                    const initMain = (d.gameMode === 'omok') ? 300 : 600;
+                    const initByo = (d.gameMode === 'omok') ? 15 : 30;
+                    const newTimers = {
+                        black: { mainTime: initMain, byoTime: initByo, byoPeriods: 3, isByo: false },
+                        white: { mainTime: initMain, byoTime: initByo, byoPeriods: 3, isByo: false }
+                    };
+                    roomRef.update({
+                        gameStarted: true,
+                        currentTurn: 'black',
+                        timers: newTimers
+                    });
+                    speakKorean("대국을 시작합니다. 흑돌 차례입니다.");
+                }
+            });
+        });
+    }
+
+    function startLocalTimerLoop() {
+        if (timerInterval) return;
+        timerInterval = setInterval(() => {
+            if (myRole !== currentTurn) return; 
+            
+            let activeTimer = timers[currentTurn];
+            if (!activeTimer) return;
+
+            if (!activeTimer.isByo) {
+                activeTimer.mainTime--;
+                if (activeTimer.mainTime <= 0) {
+                    activeTimer.isByo = true;
+                    speakKorean("기본 시간을 모두 소모했습니다. 초읽기를 시작합니다.");
+                }
+            } else {
+                activeTimer.byoTime--;
+                
+                if (activeTimer.byoTime <= 10 && activeTimer.byoTime > 0 && activeTimer.byoTime !== lastSpokenSeconds) {
+                    lastSpokenSeconds = activeTimer.byoTime;
+                    const korNums = ["", "하나", "둘", "셋", "넷", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
+                    speakKorean(korNums[activeTimer.byoTime]);
+                }
+
+                if (activeTimer.byoTime <= 0) {
+                    activeTimer.byoPeriods--;
+                    if (activeTimer.byoPeriods <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        handleTimeOutWin(currentTurn === 'black' ? 'white' : 'black');
+                        return;
+                    } else {
+                        speakKorean(`초읽기 ${activeTimer.byoPeriods}회 남았습니다.`);
+                        activeTimer.byoTime = (gameMode === 'omok') ? 15 : 30;
+                    }
+                }
+            }
+            roomRef.child('timers/' + currentTurn).set(activeTimer);
+        }, 1000);
+    }
+
+    function handleTimeOutWin(winner) {
+        speakKorean(`시간 초과로 ${winner === 'black' ? '흑돌' : '백돌'}이 승리했습니다.`);
+        alert(`⏰ 시간초과! ${winner === 'black' ? '흑돌(검은색)' : '백돌(흰색)'} 승리!`);
+        syncResetGame();
+    }
+
+    function renderTimers() {
+        const formatTime = (seconds) => {
+            if (seconds < 0) return "00:00";
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        };
+
+        timeBlackEl.textContent = timers.black.isByo ? formatTime(timers.black.byoTime) : formatTime(timers.black.mainTime);
+        timeWhiteEl.textContent = timers.white.isByo ? formatTime(timers.white.byoTime) : formatTime(timers.white.mainTime);
+
+        byoBlackEl.textContent = timers.black.isByo ? `초읽기 ${timers.black.byoPeriods}회 남음` : `초읽기 ${gameMode==='omok'?15:30}초 3회`;
+        byoWhiteEl.textContent = timers.white.isByo ? `초읽기 ${timers.white.byoPeriods}회 남음` : `초읽기 ${gameMode==='omok'?15:30}초 3회`;
+
+        boxTimerBlack.classList.toggle('active-timer', gameStarted && currentTurn === 'black');
+        boxTimerWhite.classList.toggle('active-timer', gameStarted && currentTurn === 'white');
+    }
 
     function copyShareLink() {
         const perfectUrl = window.location.origin + window.location.pathname + `?room=${roomId}`;
@@ -579,7 +759,9 @@
                     
                     intersection.appendChild(stone);
                 } else {
-                    intersection.addEventListener('click', () => selectIntersection(r, c, intersection));
+                    if (gameStarted) {
+                        intersection.addEventListener('click', () => selectIntersection(r, c, intersection));
+                    }
                 }
                 boardElement.appendChild(intersection);
             }
@@ -587,7 +769,7 @@
     }
 
     function selectIntersection(row, col, element) {
-        if (currentTurn !== myRole) return; 
+        if (currentTurn !== myRole || !gameStarted) return; 
         if (previewStoneEl) previewStoneEl.remove();
 
         selectedCell = { r: row, c: col, element: element };
@@ -597,7 +779,7 @@
     }
 
     function confirmPlacement() {
-        if (currentTurn !== myRole || !selectedCell) return;
+        if (currentTurn !== myRole || !selectedCell || !gameStarted) return;
         const { r: row, c: col } = selectedCell;
 
         if (gameMode === 'omok') {
@@ -619,19 +801,30 @@
 
             const opponentTurn = currentTurn === 'black' ? 'white' : 'black';
             const nextMoveInfo = { r: row, c: col };
-            currentTurn = opponentTurn;
+            
+            if (timers[currentTurn].isByo) {
+                timers[currentTurn].byoTime = (gameMode === 'omok') ? 15 : 30;
+            }
 
+            currentTurn = opponentTurn;
             updateStatus();
             renderBoardFromState();
+
+            if (isWin) {
+                setTimeout(() => {
+                    speakKorean("오목 대국 종료.");
+                    alert(`🎉 [오목 승리] ${opponentTurn === 'white' ? '흑돌' : '백돌'} 승리!`);
+                    syncResetGame();
+                }, 50);
+                return;
+            }
 
             if(roomRef) {
                 roomRef.update({
                     gameState: JSON.stringify(gameState), currentTurn: opponentTurn,
-                    capturedStones: capturedStones, koCoordinate: null, lastMove: nextMoveInfo
+                    capturedStones: capturedStones, koCoordinate: null, lastMove: nextMoveInfo, timers: timers
                 }).catch(()=>{});
             }
-
-            if (isWin) { setTimeout(()=> { alert(`🎉 [오목 승리] ${opponentTurn === 'white' ? '흑돌' : '백돌'} 승리!`); }, 10); }
         } 
         else {
             if (koCoordinate && koCoordinate.r === row && koCoordinate.c === col) { alert("패 규칙 구역입니다."); return; }
@@ -672,6 +865,10 @@
                 nextKo = { r: currentCaptured[0].r, c: currentCaptured[0].c };
             }
 
+            if (timers[currentTurn].isByo) {
+                timers[currentTurn].byoTime = 30;
+            }
+
             const nextMoveInfo = { r: row, c: col };
             currentTurn = opponentTurn;
             updateStatus();
@@ -680,7 +877,7 @@
             if(roomRef) {
                 roomRef.update({
                     gameState: JSON.stringify(gameState), currentTurn: opponentTurn,
-                    capturedStones: capturedStones, koCoordinate: nextKo, lastMove: nextMoveInfo
+                    capturedStones: capturedStones, koCoordinate: nextKo, lastMove: nextMoveInfo, timers: timers
                 }).catch(()=>{});
             }
         }
@@ -781,6 +978,40 @@
     function updateStatus() {
         capByBlackEl.textContent = capturedStones.black;
         capByWhiteEl.textContent = capturedStones.white;
+        
+        if (!gameStarted) {
+            const bReady = readies.black ? "🟢준비완료" : "🔴대기중";
+            const wReady = readies.white ? "🟢준비완료" : "🔴대기중";
+            
+            turnText.textContent = `흑 [${bReady}] | 백 [${wReady}]`;
+            turnBadge.className = "turn-badge";
+            
+            btnConfirm.disabled = true;
+            btnConfirm.textContent = "양측 모두 준비를 완료해 주세요";
+            
+            if (myRole !== 'spectator') {
+                btnReady.style.display = "block";
+                btnReset.style.display = "none";
+                if (readies[myRole]) {
+                    btnReady.textContent = "✅ 준비 완료";
+                    btnReady.style.backgroundColor = "#2ecc71"; 
+                } else {
+                    btnReady.textContent = "🛑 대기 중";
+                    btnReady.style.backgroundColor = "#e67e22"; 
+                }
+            } else {
+                btnReady.style.display = "none";
+                btnReset.style.display = "none";
+            }
+            return;
+        }
+
+        btnReady.style.display = "none"; 
+        // 🏳️ 게임 시작 시, 대기 버튼이 사라지고 기권(리셋) 버튼 노출
+        if (myRole !== 'spectator') {
+            btnReset.style.display = "block";
+        }
+
         const isMyTurn = (currentTurn === myRole);
 
         if (currentTurn === 'black') {
@@ -809,38 +1040,71 @@
     }
 
     function syncGameMode(mode) {
+        if (gameStarted) { alert("대국 도중에는 종목을 변경할 수 없습니다."); return; }
         const size = mode === 'omok' ? 15 : 19;
         gameMode = mode; boardSize = size;
         gameState = Array(size).fill(null).map(() => Array(size).fill(null));
         currentTurn = 'black'; capturedStones = { black: 0, white: 0 }; koCoordinate = null; lastMove = null;
 
+        const initMain = (mode === 'omok') ? 300 : 600;
+        const initByo = (mode === 'omok') ? 15 : 30;
+        timers = {
+            black: { mainTime: initMain, byoTime: initByo, byoPeriods: 3, isByo: false },
+            white: { mainTime: initMain, byoTime: initByo, byoPeriods: 3, isByo: false }
+        };
+
+        cachedGameStateJson = JSON.stringify(gameState);
+        cachedLastMoveJson = JSON.stringify(lastMove);
+
         document.getElementById('btnModeBaduk').classList.toggle('active', gameMode === 'baduk');
         document.getElementById('btnModeOmok').classList.toggle('active', gameMode === 'omok');
 
-        updateStarPoints(); renderBoardFromState(); updateStatus();
+        updateStarPoints(); renderBoardFromState(); updateStatus(); renderTimers();
 
         if(roomRef) {
             roomRef.update({
                 gameMode: mode, gameState: JSON.stringify(gameState),
-                currentTurn: 'black', capturedStones: capturedStones, koCoordinate: null, lastMove: null
+                currentTurn: 'black', capturedStones: capturedStones, koCoordinate: null, lastMove: null,
+                gameStarted: false, readies: { black: false, white: false }, timers: timers
             }).catch(()=>{});
         }
     }
 
     function syncResetGame() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+
         gameState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
         currentTurn = 'black'; capturedStones = { black: 0, white: 0 }; koCoordinate = null; lastMove = null;
-        renderBoardFromState(); updateStatus();
+        gameStarted = false;
+        readies = { black: false, white: false };
+
+        const initMain = (gameMode === 'omok') ? 300 : 600;
+        const initByo = (gameMode === 'omok') ? 15 : 30;
+        timers = {
+            black: { mainTime: initMain, byoTime: initByo, byoPeriods: 3, isByo: false },
+            white: { mainTime: initMain, byoTime: initByo, byoPeriods: 3, isByo: false }
+        };
+
+        cachedGameStateJson = JSON.stringify(gameState);
+        cachedLastMoveJson = JSON.stringify(lastMove);
+
+        renderBoardFromState(); updateStatus(); renderTimers();
 
         if(roomRef) {
             roomRef.update({
                 gameState: JSON.stringify(gameState), currentTurn: 'black',
-                capturedStones: { black: 0, white: 0 }, koCoordinate: null, lastMove: null
+                capturedStones: { black: 0, white: 0 }, koCoordinate: null, lastMove: null,
+                gameStarted: false, readies: readies, timers: timers
             }).catch(()=>{});
         }
     }
 
-    function requestAutoCounting() { if(gameMode === 'baduk') runTerritoryCounting(); }
+    function requestAutoCounting() { 
+        if(gameMode === 'baduk' && gameStarted) {
+            runTerritoryCounting();
+        } 
+    }
 
     function runTerritoryCounting() {
         const visited = Array(boardSize).fill(null).map(() => Array(boardSize).fill(false));
@@ -870,7 +1134,12 @@
         }
         const blackTotal = blackTerritory + capturedStones.black;
         const whiteTotal = whiteTerritory + capturedStones.white + komi;
-        alert(`🏁 [결과] 흑: ${blackTotal}집 vs 백: ${whiteTotal}집`);
+        
+        setTimeout(() => {
+            speakKorean("바둑 대국 종료.");
+            alert(`🏁 [결과] 흑: ${blackTotal}집 vs 백: ${whiteTotal}집\n확인을 누르면 게임판이 자동 리셋됩니다.`);
+            syncResetGame();
+        }, 50);
     }
 </script>
 
