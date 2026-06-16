@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>정석 모바일 바둑 & 오목 (공식 멀티플레이어 에디션)</title>
+    <title>정석 모바일 바둑 & 오목 (구글 서버 완벽 연동판)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -21,7 +21,6 @@
             padding: 5px;
         }
 
-        /* 📱 진짜 내 웹사이트이므로 화면 비율에 맞춰 컴팩트하게 정렬 (절대 안 잘림) */
         .phone-container {
             width: 100%;
             max-width: 360px;
@@ -72,7 +71,6 @@
             cursor: pointer;
             font-size: 11px;
             font-weight: bold;
-            box-shadow: 0 2px 5px rgba(228, 168, 83, 0.3);
         }
 
         .mode-selector-row {
@@ -353,6 +351,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
 <script>
+    // ⚙️ 유저님의 진짜 구글 파이어베이스 서버 주소 수정을 적용했습니다!
     const firebaseConfig = {
         apiKey: "AIzaSyBXYAjrswjYM3H1t8--Z1Fu9VN0mHk2aWE",
         authDomain: "gogo-e5fed.firebaseapp.com",
@@ -361,7 +360,7 @@
         messagingSenderId: "336548824535",
         appId: "1:336548824535:web:23bc7ac26e2e9a9649b792",
         measurementId: "G-S5GPD8J09Q",
-        databaseURL: "https://gogo-e5fed-default-rtdb.asia-southeast1.firebasedatabase.app"
+        databaseURL: "https://gogo-e5fed-default-rtdb.firebaseio.com/" // 🔗 유저님의 진짜 서버 주소 완벽 이식!
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -455,14 +454,12 @@
         updateStatus();
     });
 
-    // ✨ [순수 웹 표준 주소 복사 프로토콜] 
-    // 독립 웹 호스팅 상태이므로 꼼수 없이 진짜 내 브라우저 주소를 칼같이 복사합니다.
     function copyShareLink() {
         const perfectUrl = window.location.origin + window.location.pathname + `?room=${roomId}`;
         
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(perfectUrl).then(() => {
-                alert("🚀 대국 초대 링크 복사 성공!\n카톡방에 붙여넣으면 친구가 즉시 입장합니다.");
+                alert("🚀 대국 초대 링크 복사 성공!\n카톡방에 붙여넣으면 친구와 실시간 연동 대국이 시작됩니다.");
             }).catch(() => {
                 prompt("링크 주소입니다. 복사해서 사용하세요:", perfectUrl);
             });
