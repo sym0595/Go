@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>정석 모바일 바둑 & 오목 (공식 멀티플레이어 에디션)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 5px;
+        }
+
+        /* 📱 진짜 내 웹사이트이므로 화면 비율에 맞춰 컴팩트하게 정렬 (절대 안 잘림) */
+        .phone-container {
+            width: 100%;
+            max-width: 360px;
+            height: 94vh;
+            max-height: 640px;
+            background-color: #1a1a1a;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            border: 6px solid #333;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .status-bar {
+            background-color: #222;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 10px 12px;
+            gap: 6px;
+            border-bottom: 1px solid #333;
+        }
+
+        .network-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #111;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+        }
+
+        .my-role-badge {
+            font-weight: bold;
+            color: #e4a853;
+        }
+
+        .btn-share {
+            background: linear-gradient(135deg, #e4a853, #c99243);
+            color: #1a1a1a;
+            border: none;
+            padding: 3px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(228, 168, 83, 0.3);
+        }
+
+        .mode-selector-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #2a2a2a;
+            padding: 4px 10px;
+            border-radius: 8px;
+        }
+
+        .role-label {
+            font-size: 11px;
+            color: #aaa;
+            font-weight: bold;
+        }
+
+        .role-btn-group {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-role {
+            background: none;
+            border: none;
+            color: #888;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-role.active {
+            background-color: #e4a853;
+            color: #1a1a1a;
+        }
+
+        .turn-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .turn-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .turn-badge {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #000;
+            border: 1px solid #555;
+        }
+
+        .turn-badge.white { background-color: #fff; }
+
+        .komi-badge {
+            font-size: 10px;
+            color: #ccc;
+            background-color: #444;
+            padding: 2px 6px;
+            border-radius: 8px;
+        }
+
+        .capture-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #888;
+        }
+
+        .game-area {
+            flex: 1;
+            min-height: 0; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #2a2a2a;
+            padding: 6px;
+        }
+
+        .board-wrapper {
+            width: 100%;
+            max-height: 100%;
+            aspect-ratio: 1;
+            background-color: #e4a853;
+            border-radius: 4px;
+            padding: 6px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .board {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            touch-action: manipulation;
+        }
+
+        .board.locked {
+            opacity: 0.75;
+            cursor: not-allowed;
+        }
+
+        .intersection {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .intersection::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background-color: #443016;
+            z-index: 1;
+        }
+
+        .intersection::after {
+            content: '';
+            position: absolute;
+            width: 1px;
+            height: 100%;
+            background-color: #443016;
+            z-index: 1;
+        }
+
+        .intersection.edge-top::after { height: 50%; top: 50%; }
+        .intersection.edge-bottom::after { height: 50%; bottom: 50%; }
+        .intersection.edge-left::before { width: 50%; left: 50%; }
+        .intersection.edge-right::before { width: 50%; right: 50%; }
+
+        .intersection.star-point {
+            background-image: radial-gradient(circle, #443016 1.5px, transparent 2px);
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .stone {
+            width: 96%;
+            height: 96%;
+            border-radius: 50%;
+            z-index: 3;
+            transform: scale(0);
+            transition: transform 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+            pointer-events: none;
+        }
+        .stone.placed { transform: scale(1); }
+        .stone.black { background: radial-gradient(circle at 30% 30%, #444, #111 70%); }
+        .stone.white { background: radial-gradient(circle at 30% 30%, #fff, #ddd 70%); border: 0.5px solid #bbb; }
+
+        .preview-stone {
+            width: 92%;
+            height: 92%;
+            border-radius: 50%;
+            z-index: 2;
+            opacity: 0.5;
+            animation: blink 0.8s infinite alternate;
+            pointer-events: none;
+        }
+        .preview-stone.black { background-color: #000; }
+        .preview-stone.white { background-color: #fff; border: 1px solid #bbb; }
+
+        @keyframes blink {
+            from { opacity: 0.4; transform: scale(0.9); }
+            to { opacity: 0.7; transform: scale(0.96); }
+        }
+
+        .control-panel {
+            padding: 8px 12px;
+            background-color: #222;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid #333;
+        }
+
+        .btn-confirm {
+            width: 100%;
+            height: 44px;
+            background: linear-gradient(135deg, #e4a853, #c99243);
+            color: #1a1a1a;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .btn-confirm:disabled {
+            background: #444;
+            color: #777;
+            cursor: not-allowed;
+        }
+
+        .sub-btn-row {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .btn-sub {
+            flex: 1;
+            height: 32px;
+            background-color: #333;
+            color: #ccc;
+            border: 1px solid #444;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-sub:disabled {
+            background-color: #222;
+            color: #555;
+            border-color: #2a2a2a;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+    <div class="status-bar">
+        <div class="network-row">
+            <span>내 역할: <span id="txtMyRole" class="my-role-badge">연결 중</span></span>
+            <button class="btn-share" onclick="copyShareLink()">🔗 대국 링크 복사</button>
+        </div>
+        
+        <div class="mode-selector-row">
+            <span class="role-label">대국 종목:</span>
+            <div class="role-btn-group">
+                <button id="btnModeBaduk" class="btn-role active" onclick="syncGameMode('baduk')">바둑 (19칸)</button>
+                <button id="btnModeOmok" class="btn-role" onclick="syncGameMode('omok')">오목 (렌주룰)</button>
+            </div>
+        </div>
+
+        <div class="turn-row">
+            <div class="turn-indicator">
+                <div id="turnBadge" class="turn-badge"></div>
+                <span id="turnText">흑돌 차례</span>
+            </div>
+            <div id="lblKomi" class="komi-badge">덤 6.5집</div>
+        </div>
+        <div id="lblCapture" class="capture-row">
+            <span>흑이 잡은 백돌: <span id="capByBlack">0</span>개</span>
+            <span>백이 잡은 흑돌: <span id="capByWhite">0</span>개</span>
+        </div>
+    </div>
+
+    <div class="game-area">
+        <div class="board-wrapper">
+            <div id="board" class="board"></div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <button id="btnConfirm" class="btn-confirm" onclick="confirmPlacement()">➔ 착수 완료</button>
+        <div class="sub-btn-row">
+            <button id="btnCounting" class="btn-sub" onclick="requestAutoCounting()">🏁 계가 신청</button>
+            <button class="btn-sub" onclick="syncResetGame()">🔄 판 리셋</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBXYAjrswjYM3H1t8--Z1Fu9VN0mHk2aWE",
+        authDomain: "gogo-e5fed.firebaseapp.com",
+        projectId: "gogo-e5fed",
+        storageBucket: "gogo-e5fed.firebasestorage.app",
+        messagingSenderId: "336548824535",
+        appId: "1:336548824535:web:23bc7ac26e2e9a9649b792",
+        measurementId: "G-S5GPD8J09Q",
+        databaseURL: "https://gogo-e5fed-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let roomId = urlParams.get('room');
+    if (!roomId) {
+        roomId = 'room_' + Math.random().toString(36).substr(2, 9);
+        const nextUrl = window.location.origin + window.location.pathname + '?room=' + roomId;
+        window.history.pushState({path: nextUrl}, '', nextUrl);
+    }
+
+    let userToken;
+    try {
+        userToken = localStorage.getItem('go_user_token_' + roomId);
+        if (!userToken) {
+            userToken = 'u_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('go_user_token_' + roomId, userToken);
+        }
+    } catch (e) {
+        userToken = 'u_guest_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    let gameMode = 'baduk'; 
+    let boardSize = 19;
+    let currentTurn = 'black';
+    let myRole = 'black'; 
+    
+    let gameState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+    let koCoordinate = null; 
+    const komi = 6.5;
+    let capturedStones = { black: 0, white: 0 }; 
+    
+    let selectedCell = null; 
+    let previewStoneEl = null; 
+    let starPoints = [];
+
+    const dr = [-1, 1, 0, 0]; const dc = [0, 0, -1, 1];
+
+    const boardElement = document.getElementById('board');
+    const turnBadge = document.getElementById('turnBadge');
+    const turnText = document.getElementById('turnText');
+    const capByBlackEl = document.getElementById('capByBlack');
+    const capByWhiteEl = document.getElementById('capByWhite');
+    const btnConfirm = document.getElementById('btnConfirm');
+    const txtMyRole = document.getElementById('txtMyRole');
+    const lblKomi = document.getElementById('lblKomi');
+    const lblCapture = document.getElementById('lblCapture');
+    const btnCounting = document.getElementById('btnCounting');
+
+    function updateStarPoints() {
+        starPoints = [];
+        const lines = (boardSize === 19) ? [3, 9, 15] : [3, 7, 11];
+        for (let r of lines) for (let c of lines) starPoints.push({r, c});
+    }
+
+    updateStarPoints();
+    renderBoardFromState();
+    updateStatus();
+
+    let roomRef = database.ref('go_rooms/' + roomId);
+    roomRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) {
+            roomRef.set({
+                gameMode: gameMode,
+                gameState: JSON.stringify(gameState),
+                currentTurn: currentTurn,
+                capturedStones: capturedStones,
+                koCoordinate: null,
+                players: { black: userToken }
+            });
+            return;
+        }
+
+        if (data.players.black === userToken) { myRole = 'black'; txtMyRole.textContent = "흑돌 (나)"; } 
+        else if (data.players.white === userToken) { myRole = 'white'; txtMyRole.textContent = "백돌 (나)"; } 
+        else if (!data.players.white) { roomRef.child('players/white').set(userToken); myRole = 'white'; txtMyRole.textContent = "백돌 (나)"; } 
+        else { myRole = 'spectator'; txtMyRole.textContent = "관전"; }
+
+        gameMode = data.gameMode || 'baduk';
+        boardSize = (gameMode === 'omok') ? 15 : 19;
+        gameState = JSON.parse(data.gameState);
+        currentTurn = data.currentTurn;
+        capturedStones = data.capturedStones || { black: 0, white: 0 };
+        koCoordinate = data.koCoordinate;
+
+        updateStarPoints();
+        renderBoardFromState();
+        updateStatus();
+    });
+
+    // ✨ [순수 웹 표준 주소 복사 프로토콜] 
+    // 독립 웹 호스팅 상태이므로 꼼수 없이 진짜 내 브라우저 주소를 칼같이 복사합니다.
+    function copyShareLink() {
+        const perfectUrl = window.location.origin + window.location.pathname + `?room=${roomId}`;
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(perfectUrl).then(() => {
+                alert("🚀 대국 초대 링크 복사 성공!\n카톡방에 붙여넣으면 친구가 즉시 입장합니다.");
+            }).catch(() => {
+                prompt("링크 주소입니다. 복사해서 사용하세요:", perfectUrl);
+            });
+        } else {
+            prompt("링크 주소입니다. 복사해서 사용하세요:", perfectUrl);
+        }
+    }
+
+    function renderBoardFromState() {
+        boardElement.innerHTML = '';
+        boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 1fr)`;
+        boardElement.style.gridTemplateRows = `repeat(${boardSize}, 1fr)`;
+        if (previewStoneEl) previewStoneEl = null;
+        selectedCell = null;
+
+        for (let r = 0; r < boardSize; r++) {
+            for (let c = 0; c < boardSize; c++) {
+                const intersection = document.createElement('div');
+                intersection.classList.add('intersection');
+
+                if (r === 0) intersection.classList.add('edge-top');
+                if (r === boardSize - 1) intersection.classList.add('edge-bottom');
+                if (c === 0) intersection.classList.add('edge-left');
+                if (c === boardSize - 1) intersection.classList.add('edge-right');
+
+                if (starPoints.some(pt => pt.r === r && pt.c === c)) intersection.classList.add('star-point');
+
+                intersection.dataset.row = r;
+                intersection.dataset.col = c;
+
+                if (gameState && gameState[r] && gameState[r][c] !== null) {
+                    const stone = document.createElement('div');
+                    stone.classList.add('stone', gameState[r][c], 'placed');
+                    intersection.appendChild(stone);
+                } else {
+                    intersection.addEventListener('click', () => selectIntersection(r, c, intersection));
+                }
+                boardElement.appendChild(intersection);
+            }
+        }
+    }
+
+    function selectIntersection(row, col, element) {
+        if (currentTurn !== myRole) return; 
+        if (previewStoneEl) previewStoneEl.remove();
+
+        selectedCell = { r: row, c: col, element: element };
+        previewStoneEl = document.createElement('div');
+        previewStoneEl.classList.add('preview-stone', currentTurn);
+        element.appendChild(previewStoneEl);
+    }
+
+    function confirmPlacement() {
+        if (currentTurn !== myRole || !selectedCell) return;
+        const { r: row, c: col } = selectedCell;
+
+        if (gameMode === 'omok') {
+            if (currentTurn === 'black') {
+                if (checkRenjuFouls(row, col)) {
+                    if (previewStoneEl) { previewStoneEl.remove(); previewStoneEl = null; }
+                    selectedCell = null; return;
+                }
+            }
+
+            gameState[row][col] = currentTurn;
+
+            let isWin = false;
+            if (currentTurn === 'white') {
+                for (let i = 0; i < 4; i++) { if (countContinuous(row, col, i, 'white') >= 5) isWin = true; }
+            } else {
+                for (let i = 0; i < 4; i++) { if (countContinuous(row, col, i, 'black') === 5) isWin = true; }
+            }
+
+            const opponentTurn = currentTurn === 'black' ? 'white' : 'black';
+            currentTurn = opponentTurn;
+
+            updateStatus();
+            renderBoardFromState();
+
+            if(roomRef) {
+                roomRef.update({
+                    gameState: JSON.stringify(gameState), currentTurn: opponentTurn,
+                    capturedStones: capturedStones, koCoordinate: null
+                }).catch(()=>{});
+            }
+
+            if (isWin) { setTimeout(()=> { alert(`🎉 [오목 승리] ${opponentTurn === 'white' ? '흑돌' : '백돌'} 승리!`); }, 10); }
+        } 
+        else {
+            if (koCoordinate && koCoordinate.r === row && koCoordinate.c === col) { alert("패 규칙 구역입니다."); return; }
+
+            gameState[row][col] = currentTurn;
+            const opponentTurn = currentTurn === 'black' ? 'white' : 'black';
+            const currentCaptured = [];
+            const groupsToCapture = [];
+
+            for (let i = 0; i < 4; i++) {
+                const nr = row + dr[i], nc = col + dc[i];
+                if (inBounds(nr, nc) && gameState[nr][nc] === opponentTurn) {
+                    const group = findGroup(nr, nc, opponentTurn);
+                    if (countLiberties(group) === 0) {
+                        if (!groupsToCapture.some(g => g[0].r === group[0].r && g[0].c === group[0].c)) groupsToCapture.push(group);
+                    }
+                }
+            }
+
+            for (const group of groupsToCapture) {
+                for (const cell of group) { gameState[cell.r][cell.c] = null; currentCaptured.push(cell); }
+            }
+
+            if (currentCaptured.length > 0) {
+                if (currentTurn === 'black') capturedStones.black += currentCaptured.length;
+                else capturedStones.white += currentCaptured.length;
+            }
+
+            const ownGroup = findGroup(row, col, currentTurn);
+            if (countLiberties(ownGroup) === 0 && currentCaptured.length === 0) {
+                gameState[row][col] = null;
+                if (previewStoneEl) { previewStoneEl.remove(); previewStoneEl = null; }
+                selectedCell = null; alert("자충수입니다!"); return;
+            }
+
+            let nextKo = null;
+            if (currentCaptured.length === 1 && ownGroup.length === 1) {
+                nextKo = { r: currentCaptured[0].r, c: currentCaptured[0].c };
+            }
+
+            currentTurn = opponentTurn;
+            updateStatus();
+            renderBoardFromState();
+
+            if(roomRef) {
+                roomRef.update({
+                    gameState: JSON.stringify(gameState), currentTurn: opponentTurn,
+                    capturedStones: capturedStones, koCoordinate: nextKo
+                }).catch(()=>{});
+            }
+        }
+    }
+
+    function checkRenjuFouls(row, col) {
+        for (let i = 0; i < 4; i++) { if (countContinuous(row, col, i, 'black') >= 6) { alert("🚫 장선 금지!"); return true; } }
+        if (isThreeThreeViolation(row, col)) { alert("🚫 쌍삼(3-3) 금지!"); return true; }
+        if (isFourFourViolation(row, col)) { alert("🚫 쌍사(4-4) 금지!"); return true; }
+        return false;
+    }
+
+    function countContinuous(r, c, dirIdx, color) {
+        const dirs = [{dr:0, dc:1}, {dr:1, dc:0}, {dr:1, dc:1}, {dr:-1, dc:1}];
+        const {dr, dc} = dirs[dirIdx]; let count = 1; let nr = r + dr, nc = c + dc;
+        while(inBounds(nr, nc) && gameState[nr][nc] === color) { count++; nr += dr; nc += dc; }
+        nr = r - dr; nc = c - dc;
+        while(inBounds(nr, nc) && gameState[nr][nc] === color) { count++; nr -= dr; nc -= dc; }
+        return count;
+    }
+
+    function isThreeThreeViolation(r, c) {
+        gameState[r][c] = 'black'; let openThreeCount = 0;
+        const dirs = [{dr:0, dc:1}, {dr:1, dc:0}, {dr:1, dc:1}, {dr:-1, dc:1}];
+        for (let i = 0; i < 4; i++) { if (isOpenThree(r, c, dirs[i].dr, dirs[i].dc)) openThreeCount++; }
+        gameState[r][c] = null; return openThreeCount >= 2;
+    }
+
+    function isOpenThree(r, c, dr, dc) {
+        let line = [];
+        for (let offset = -4; offset <= 4; offset++) {
+            let nr = r + dr * offset, nc = c + dc * offset;
+            if (!inBounds(nr, nc)) line.push('X');
+            else if (gameState[nr][nc] === 'black') line.push('1');
+            else if (gameState[nr][nc] === 'white') line.push('W');
+            else line.push('0');
+        }
+        const patterns = ["011100", "001110", "010110", "011010"];
+        const lineStr = line.join('');
+        for (let start = 0; start <= 3; start++) { if (patterns.includes(lineStr.substring(start, start + 6))) return true; }
+        return false;
+    }
+
+    function isFourFourViolation(r, c) {
+        gameState[r][c] = 'black'; let fourCount = 0;
+        const dirs = [{dr:0, dc:1}, {dr:1, dc:0}, {dr:1, dc:1}, {dr:-1, dc:1}];
+        for (let i = 0; i < 4; i++) { if (isFour(r, c, dirs[i].dr, dirs[i].dc)) fourCount++; }
+        gameState[r][c] = null; return fourCount >= 2;
+    }
+
+    function isFour(r, c, dr, dc) {
+        let line = [];
+        for (let offset = -4; offset <= 4; offset++) {
+            let nr = r + dr * offset, nc = c + dc * offset;
+            if (!inBounds(nr, nc)) line.push('X');
+            else if (gameState[nr][nc] === 'black') line.push('1');
+            else if (gameState[nr][nc] === 'white') line.push('W');
+            else line.push('0');
+        }
+        const lineStr = line.join('');
+        for (let start = 0; start <= 4; start++) {
+            const windowStr = lineStr.substring(start, start + 5);
+            let count1 = (windowStr.match(/1/g) || []).length;
+            let count0 = (windowStr.match(/0/g) || []).length;
+            if (count1 === 4 && count0 === 1) return true;
+        }
+        return false;
+    }
+
+    function inBounds(r, c) { return r >= 0 && r < boardSize && c >= 0 && c < boardSize; }
+
+    function findGroup(startR, startC, color) {
+        const group = []; const visited = Array(boardSize).fill(null).map(() => Array(boardSize).fill(false));
+        const queue = [[startR, startC]]; visited[startR][startC] = true;
+        while (queue.length > 0) {
+            const [r, c] = queue.shift(); group.push({r, c});
+            for (let i = 0; i < 4; i++) {
+                const nr = r + dr[i], nc = c + dc[i];
+                if (inBounds(nr, nc) && !visited[nr][nc] && gameState[nr][nc] === color) {
+                    visited[nr][nc] = true; queue.push([nr, nc]);
+                }
+            }
+        }
+        return group;
+    }
+
+    function countLiberties(group) {
+        const liberties = new Set();
+        for (const cell of group) {
+            for (let i = 0; i < 4; i++) {
+                const nr = cell.r + dr[i], nc = cell.c + dc[i];
+                if (inBounds(nr, nc) && gameState[nr][nc] === null) liberties.add(`${nr},${nc}`);
+            }
+        }
+        return liberties.size;
+    }
+
+    function updateStatus() {
+        capByBlackEl.textContent = capturedStones.black;
+        capByWhiteEl.textContent = capturedStones.white;
+        const isMyTurn = (currentTurn === myRole);
+
+        if (currentTurn === 'black') {
+            turnBadge.classList.remove('white');
+            turnText.textContent = isMyTurn ? '흑돌 차례 (당신)' : '흑돌 차례';
+        } else {
+            turnBadge.classList.add('white');
+            turnText.textContent = isMyTurn ? '백돌 차례 (당신)' : '백돌 차례';
+        }
+
+        if (gameMode === 'omok') {
+            lblKomi.textContent = "렌주룰 필터 가동"; lblKomi.style.backgroundColor = "#b33939";
+            lblCapture.style.opacity = "0"; btnCounting.disabled = true; btnCounting.textContent = "오목 자동 판정";
+        } else {
+            lblKomi.textContent = "덤 6.5집"; lblKomi.style.backgroundColor = "#444";
+            lblCapture.style.opacity = "1"; btnCounting.disabled = false; btnCounting.textContent = "🏁 계가 신청";
+        }
+
+        if (isMyTurn) {
+            boardElement.classList.remove('locked');
+            btnConfirm.disabled = false; btnConfirm.textContent = "➔ 착수 완료";
+        } else {
+            boardElement.classList.add('locked'); btnConfirm.disabled = true;
+            btnConfirm.textContent = myRole === 'spectator' ? "관전 모드 상태입니다" : "상대방의 차례입니다";
+        }
+    }
+
+    function syncGameMode(mode) {
+        const size = mode === 'omok' ? 15 : 19;
+        gameMode = mode; boardSize = size;
+        gameState = Array(size).fill(null).map(() => Array(size).fill(null));
+        currentTurn = 'black'; capturedStones = { black: 0, white: 0 }; koCoordinate = null;
+
+        document.getElementById('btnModeBaduk').classList.toggle('active', gameMode === 'baduk');
+        document.getElementById('btnModeOmok').classList.toggle('active', gameMode === 'omok');
+
+        updateStarPoints(); renderBoardFromState(); updateStatus();
+
+        if(roomRef) {
+            roomRef.update({
+                gameMode: mode, gameState: JSON.stringify(gameState),
+                currentTurn: 'black', capturedStones: capturedStones, koCoordinate: null
+            }).catch(()=>{});
+        }
+    }
+
+    function syncResetGame() {
+        gameState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+        currentTurn = 'black'; capturedStones = { black: 0, white: 0 }; koCoordinate = null;
+        renderBoardFromState(); updateStatus();
+
+        if(roomRef) {
+            roomRef.update({
+                gameState: JSON.stringify(gameState), currentTurn: 'black',
+                capturedStones: { black: 0, white: 0 }, koCoordinate: null
+            }).catch(()=>{});
+        }
+    }
+
+    function requestAutoCounting() { if(gameMode === 'baduk') runTerritoryCounting(); }
+
+    function runTerritoryCounting() {
+        const visited = Array(boardSize).fill(null).map(() => Array(boardSize).fill(false));
+        let blackTerritory = 0; let whiteTerritory = 0;
+        for (let r = 0; r < boardSize; r++) {
+            for (let c = 0; c < boardSize; c++) {
+                if (gameState[r][c] === null && !visited[r][c]) {
+                    const region = []; const queue = [[r, c]]; const borderColors = new Set();
+                    visited[r][c] = true;
+                    while (queue.length > 0) {
+                        const [currR, currC] = queue.shift(); region.push([currR, currC]);
+                        for (let i = 0; i < 4; i++) {
+                            const nr = currR + dr[i], nc = currC + dc[i];
+                            if (inBounds(nr, nc)) {
+                                if (gameState[nr][nc] === null) {
+                                    if (!visited[nr][nc]) { visited[nr][nc] = true; queue.push([nr, nc]); }
+                                } else { borderColors.add(gameState[nr][nc]); }
+                            }
+                        }
+                    }
+                    if (borderColors.size === 1) {
+                        if (borderColors.has('black')) blackTerritory += region.length;
+                        if (borderColors.has('white')) whiteTerritory += region.length;
+                    }
+                }
+            }
+        }
+        const blackTotal = blackTerritory + capturedStones.black;
+        const whiteTotal = whiteTerritory + capturedStones.white + komi;
+        alert(`🏁 [결과] 흑: ${blackTotal}집 vs 백: ${whiteTotal}집`);
+    }
+</script>
+
+</body>
+</html>
