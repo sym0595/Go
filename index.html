@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>바둑 & 오목</title>
     <style>
         * {
@@ -12,27 +12,25 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
+        /* 🌟 변경됨: 화면 전체를 꽉 채우도록 설정 */
         body {
-            background-color: #f0f2f5;
+            background-color: #1a1a1a;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            padding: 5px;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* 불필요한 스크롤 방지 */
         }
 
+        /* 🌟 변경됨: 폰 껍데기(테두리, 그림자 등) 제거 */
         .phone-container {
             width: 100%;
-            max-width: 360px;
-            height: 94vh;
-            max-height: 640px;
+            height: 100%;
+            max-width: 800px; /* PC 모니터에서 너무 찢어지지 않게 최댓값 설정 */
             background-color: #1a1a1a;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            border: 6px solid #333;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
             position: relative;
         }
 
@@ -42,8 +40,8 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 10px 12px;
-            gap: 6px;
+            padding: 12px 16px;
+            gap: 8px;
             border-bottom: 1px solid #333;
         }
 
@@ -52,9 +50,9 @@
             justify-content: space-between;
             align-items: center;
             background-color: #111;
-            padding: 5px 10px;
+            padding: 6px 12px;
             border-radius: 8px;
-            font-size: 11px;
+            font-size: 12px;
         }
 
         .my-role-badge {
@@ -63,10 +61,10 @@
         }
 
         .status-badge {
-            padding: 2px 6px;
+            padding: 3px 8px;
             border-radius: 4px;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 11px;
         }
         .status-online {
             background-color: #2ecc71;
@@ -82,10 +80,10 @@
             background: linear-gradient(135deg, #e4a853, #c99243);
             color: #1a1a1a;
             border: none;
-            padding: 3px 12px;
+            padding: 4px 14px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
         }
 
@@ -94,27 +92,27 @@
             justify-content: space-between;
             align-items: center;
             background-color: #2a2a2a;
-            padding: 4px 10px;
+            padding: 6px 12px;
             border-radius: 8px;
         }
 
         .role-label {
-            font-size: 11px;
+            font-size: 12px;
             color: #aaa;
             font-weight: bold;
         }
 
         .role-btn-group {
             display: flex;
-            gap: 4px;
+            gap: 6px;
         }
 
         .btn-role {
             background: none;
             border: none;
             color: #888;
-            padding: 3px 8px;
-            font-size: 11px;
+            padding: 4px 10px;
+            font-size: 12px;
             font-weight: bold;
             border-radius: 5px;
             cursor: pointer;
@@ -134,14 +132,14 @@
         .turn-indicator {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 14px;
         }
 
         .turn-badge {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             background-color: #000;
             border: 1px solid #555;
@@ -150,17 +148,17 @@
         .turn-badge.white { background-color: #fff; }
 
         .komi-badge {
-            font-size: 10px;
+            font-size: 11px;
             color: #ccc;
             background-color: #444;
-            padding: 2px 6px;
+            padding: 3px 8px;
             border-radius: 8px;
         }
 
         .capture-row {
             display: flex;
             justify-content: space-between;
-            font-size: 11px;
+            font-size: 12px;
             color: #888;
         }
 
@@ -171,17 +169,18 @@
             justify-content: center;
             align-items: center;
             background-color: #2a2a2a;
-            padding: 6px;
+            padding: 10px;
         }
 
-        /* 🧱 바둑판 외곽 테두리 */
+        /* 🌟 변경됨: 꽉 찬 화면에서도 적절한 크기 유지 */
         .board-wrapper {
             width: 100%;
+            max-width: 650px; /* PC 환경에서 바둑판이 무한히 커지는 것 방지 */
             max-height: 100%;
             aspect-ratio: 1;
             background-color: #e4a853;
             border-radius: 4px;
-            padding: 8px;
+            padding: 10px;
             box-shadow: inset 0 0 8px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.3);
             border: 1px solid #443016; 
         }
@@ -294,21 +293,21 @@
         }
 
         .control-panel {
-            padding: 8px 12px;
+            padding: 12px 16px;
             background-color: #222;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             border-top: 1px solid #333;
         }
 
         .btn-confirm {
             width: 100%;
-            height: 44px;
+            height: 50px;
             background: linear-gradient(135deg, #e4a853, #c99243);
             color: #1a1a1a;
             border: none;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             border-radius: 10px;
             cursor: pointer;
@@ -322,19 +321,19 @@
 
         .sub-btn-row {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             width: 100%;
         }
 
         .btn-sub {
             flex: 1;
-            height: 32px;
+            height: 38px;
             background-color: #333;
             color: #ccc;
             border: 1px solid #444;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
         }
 
@@ -444,7 +443,6 @@
     let previewStoneEl = null; 
     let starPoints = [];
 
-    // 🌟 추가된 부분: 불필요한 새로고침을 막기 위해 이전 상태를 기억하는 변수 🌟
     let lastRenderHash = ""; 
 
     const dr = [-1, 1, 0, 0]; const dc = [0, 0, -1, 1];
@@ -489,6 +487,7 @@
                 capturedStones: capturedStones,
                 koCoordinate: null,
                 lastMove: null,
+                winner: null,
                 players: { black: userToken }
             });
             return;
@@ -535,15 +534,25 @@
 
         updateStarPoints();
         
-        // 🌟 핵심 해결 로직: 진짜 데이터가 변했을 때만 렌더링 실행 🌟
         const currentRenderHash = (data.gameMode || 'baduk') + data.gameState + data.currentTurn + JSON.stringify(data.lastMove || null);
         
         if (lastRenderHash !== currentRenderHash) {
             renderBoardFromState();
-            lastRenderHash = currentRenderHash; // 렌더링 후 상태 갱신
+            lastRenderHash = currentRenderHash; 
         }
         
         updateStatus();
+
+        if (data.winner) {
+            setTimeout(() => {
+                const winnerName = data.winner === 'black' ? '흑돌' : '백돌';
+                alert(`🎉 [오목 승리] ${winnerName} 승리! 확인을 누르면 판이 초기화됩니다.`);
+                
+                if (myRole === data.winner) {
+                    syncResetGame();
+                }
+            }, 100);
+        }
     });
 
     function copyShareLink() {
@@ -637,8 +646,23 @@
 
             const opponentTurn = currentTurn === 'black' ? 'white' : 'black';
             const nextMoveInfo = { r: row, c: col };
-            currentTurn = opponentTurn;
 
+            if (isWin) {
+                if(roomRef) {
+                    roomRef.update({
+                        gameState: JSON.stringify(gameState), 
+                        lastMove: nextMoveInfo,
+                        winner: currentTurn 
+                    }).catch(()=>{});
+                }
+                
+                currentTurn = opponentTurn;
+                updateStatus();
+                renderBoardFromState();
+                return; 
+            }
+
+            currentTurn = opponentTurn;
             updateStatus();
             renderBoardFromState();
 
@@ -648,8 +672,6 @@
                     capturedStones: capturedStones, koCoordinate: null, lastMove: nextMoveInfo
                 }).catch(()=>{});
             }
-
-            if (isWin) { setTimeout(()=> { alert(`🎉 [오목 승리] ${opponentTurn === 'white' ? '흑돌' : '백돌'} 승리!`); }, 10); }
         } 
         else {
             if (koCoordinate && koCoordinate.r === row && koCoordinate.c === col) { alert("패 규칙 구역입니다."); return; }
@@ -840,7 +862,8 @@
         if(roomRef) {
             roomRef.update({
                 gameMode: mode, gameState: JSON.stringify(gameState),
-                currentTurn: 'black', capturedStones: capturedStones, koCoordinate: null, lastMove: null
+                currentTurn: 'black', capturedStones: capturedStones, koCoordinate: null, lastMove: null,
+                winner: null
             }).catch(()=>{});
         }
     }
@@ -853,7 +876,8 @@
         if(roomRef) {
             roomRef.update({
                 gameState: JSON.stringify(gameState), currentTurn: 'black',
-                capturedStones: { black: 0, white: 0 }, koCoordinate: null, lastMove: null
+                capturedStones: { black: 0, white: 0 }, koCoordinate: null, lastMove: null,
+                winner: null
             }).catch(()=>{});
         }
     }
