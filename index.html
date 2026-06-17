@@ -471,7 +471,7 @@
         <div class="network-row">
             <span>방 번호: <span id="txtRoomCodeDisplay" style="color:#e4a853; font-weight:bold; font-size: 14px;">----</span></span>
             <span>역할: <span id="txtMyRole" class="my-role-badge">대기 중</span></span>
-            <span id="txtOpponentStatus" class="status-badge status-offline">🔴 접속 대기</span>
+            <span id="txtOpponentStatus" class="status-badge status-offline">🔴 상대방 미접속</span>
         </div>
         
         <div class="mode-selector-row">
@@ -694,11 +694,13 @@
                         txtOpponentStatus.className = "status-badge status-offline";
                     }
                 } else {
-                    txtOpponentStatus.textContent = "🔴 상대방 대기 중";
+                    // 🌟 수정됨: 헷갈리지 않게 문구 변경 🌟
+                    txtOpponentStatus.textContent = "🔴 상대방 미접속";
                     txtOpponentStatus.className = "status-badge status-offline";
                 }
             } else {
-                txtOpponentStatus.textContent = "🔴 상대방 대기 중";
+                // 🌟 수정됨: 헷갈리지 않게 문구 변경 🌟
+                txtOpponentStatus.textContent = "🔴 상대방 미접속";
                 txtOpponentStatus.className = "status-badge status-offline";
             }
 
