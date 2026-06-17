@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>바둑 & 오목</title>
+    
+    <title>바둑과 오목</title>
+    
+    <meta name="description" content="'바둑과 오목' - 설치 없이 링크 하나로 친구와 바로 즐기는 2인용 실시간 웹게임입니다.">
+    <meta name="keywords" content="바둑과 오목, 바둑과오목, 온라인 바둑, 실시간 오목, 무료 바둑 게임, 무료 오목 게임, 친구랑 오목">
+    <meta property="og:title" content="바둑과 오목 | 실시간 웹게임">
+    <meta property="og:description" content="링크 클릭 한 번으로 친구와 바로 대결을 시작하세요!">
+    <meta property="og:type" content="website">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <meta name="google-site-verification" content="fXm9jDvZofcCOtd11ECa365_EAtMH9R3NYFizxGTC3A" />
+
     <style>
         * {
             box-sizing: border-box;
@@ -34,7 +47,6 @@
             position: relative;
         }
 
-        /* 🌟 새로 추가됨: 대기실 화면 스타일 🌟 */
         .lobby-screen {
             position: absolute;
             top: 0;
@@ -53,7 +65,7 @@
 
         .lobby-title {
             color: #e4a853;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: bold;
             margin-bottom: 10px;
         }
@@ -439,7 +451,7 @@
 <div class="phone-container">
 
     <div id="lobbyScreen" class="lobby-screen">
-        <h1 class="lobby-title">바둑 & 오목</h1>
+        <h1 class="lobby-title">바둑과 오목</h1>
         <p class="lobby-subtitle">친구와 함께 실시간으로 즐기세요</p>
 
         <div class="lobby-box">
@@ -517,7 +529,6 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 🌟 핵심 변경: 페이지 로드 시 즉시 방을 만들지 않고 URL 확인 🌟
     let roomId = null; 
     let roomRef = null;
     let presenceInterval = null;
@@ -539,7 +550,7 @@
     let gameMode = 'baduk'; 
     let boardSize = 19;
     let currentTurn = 'black';
-    let myRole = 'spectator'; // 기본값 관전자로 세팅 (입장 전)
+    let myRole = 'spectator'; 
     
     let gameState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
     let koCoordinate = null; 
@@ -566,7 +577,6 @@
     const btnCounting = document.getElementById('btnCounting');
     const txtOpponentStatus = document.getElementById('txtOpponentStatus');
 
-    // 초기 화면 그리기 (빈 바둑판)
     function updateStarPoints() {
         starPoints = [];
         const lines = (boardSize === 19) ? [3, 9, 15] : [3, 7, 11];
@@ -575,7 +585,6 @@
     updateStarPoints();
     renderBoardFromState();
 
-    // 🌟 URL에 방 번호가 있으면 바로 입장, 없으면 대기실 표시 🌟
     if (urlRoomId && urlRoomId.length > 0) {
         document.getElementById('lobbyScreen').style.display = 'none';
         enterRoom(urlRoomId);
@@ -583,29 +592,24 @@
         document.getElementById('lobbyScreen').style.display = 'flex';
     }
 
-    // [방 만들기] 기능: 4자리 코드 생성
     function createNewRoom() {
-        const newCode = Math.floor(1000 + Math.random() * 9000).toString(); // 1000 ~ 9999 난수
+        const newCode = Math.floor(1000 + Math.random() * 9000).toString(); 
         
-        // 파이어베이스에서 혹시 우연히 같은 방 번호가 있는지 확인
         database.ref('go_rooms/' + newCode).once('value', snapshot => {
             if (snapshot.exists()) {
-                createNewRoom(); // 겹치면 다시 뽑기
+                createNewRoom(); 
             } else {
-                // 안 겹치면 해당 번호로 방 입장
                 enterRoom(newCode);
             }
         });
     }
 
-    // [입력해서 들어가기] 기능
     function joinRoomFromInput() {
         const code = document.getElementById('roomCodeInput').value.trim();
         if (!code || code.length !== 4) {
             alert("4자리 방 번호를 입력해주세요.");
             return;
         }
-        // 파이어베이스에 그 방이 진짜 있는지 확인
         database.ref('go_rooms/' + code).once('value', snapshot => {
             if (snapshot.exists()) {
                 enterRoom(code);
@@ -615,20 +619,16 @@
         });
     }
 
-    // 실제 방 입장 처리 (기존 로직 합침)
     function enterRoom(code) {
         roomId = code;
         document.getElementById('lobbyScreen').style.display = 'none';
-        document.getElementById('txtRoomCodeDisplay').textContent = code; // 상단바에 방 번호 표시
+        document.getElementById('txtRoomCodeDisplay').textContent = code; 
         
-        // URL을 깔끔하게 방 번호로 변경 (새로고침 시 유지)
         const nextUrl = window.location.origin + window.location.pathname + '?room=' + code;
         window.history.pushState({path: nextUrl}, '', nextUrl);
 
-        // 파이어베이스 연결
         roomRef = database.ref('go_rooms/' + roomId);
 
-        // 나의 접속 상태 지속 업데이트
         if(presenceInterval) clearInterval(presenceInterval);
         presenceInterval = setInterval(() => {
             if (myRole !== 'spectator' && roomRef) {
@@ -636,11 +636,9 @@
             }
         }, 2000);
 
-        // 파이어베이스 데이터 수신 시작
         roomRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) {
-                // 방 데이터가 없으면 내가 최초 생성자 (흑돌)
                 roomRef.set({
                     gameMode: gameMode,
                     gameState: JSON.stringify(gameState),
@@ -655,11 +653,9 @@
                 return;
             }
 
-            // 역할 판별
             if (data.players.black === userToken) { myRole = 'black'; txtMyRole.textContent = "흑돌 (나)"; } 
             else if (data.players.white === userToken) { myRole = 'white'; txtMyRole.textContent = "백돌 (나)"; } 
             else if (!data.players.white) { 
-                // 내가 백돌 자리에 들어감
                 roomRef.child('players/white').set(userToken); 
                 myRole = 'white'; 
                 txtMyRole.textContent = "백돌 (나)"; 
@@ -669,7 +665,6 @@
                 txtMyRole.textContent = "관전 모드"; 
             }
 
-            // 게임 데이터 동기화
             gameMode = data.gameMode || 'baduk';
             const targetSize = (gameMode === 'omok') ? 15 : 19;
             
@@ -684,7 +679,6 @@
             koCoordinate = data.koCoordinate;
             lastMove = data.lastMove || null; 
 
-            // 상대방 온라인 상태 확인
             if (data.players && data.presence) {
                 const opponentRole = (myRole === 'black') ? 'white' : 'black';
                 const opponentHasToken = data.players[opponentRole];
@@ -710,7 +704,6 @@
 
             updateStarPoints();
             
-            // 데이터 변동 시에만 바둑판 다시 그리기 (잔상 버그 방지)
             const currentRenderHash = (data.gameMode || 'baduk') + data.gameState + data.currentTurn + JSON.stringify(data.lastMove || null);
             if (lastRenderHash !== currentRenderHash) {
                 renderBoardFromState();
@@ -719,7 +712,6 @@
             
             updateStatus();
 
-            // 승리 체크 및 알림
             if (data.winner) {
                 setTimeout(() => {
                     const winnerName = data.winner === 'black' ? '흑돌' : '백돌';
@@ -916,7 +908,7 @@
     }
 
     function resignGame() {
-        if (!roomId) return; // 방 입장 전에 눌리는 것 방지
+        if (!roomId) return; 
 
         if (myRole === 'spectator') {
             alert("관전자는 기권할 수 없습니다.");
@@ -1035,7 +1027,7 @@
     }
 
     function updateStatus() {
-        if (!roomId) return; // 방 입장 전이면 업데이트 건너뜀
+        if (!roomId) return; 
 
         capByBlackEl.textContent = capturedStones.black;
         capByWhiteEl.textContent = capturedStones.white;
