@@ -670,7 +670,8 @@
             koCoordinate = data.koCoordinate;
             lastMove = data.lastMove || null; 
 
-            if (isTurnChanged) {
+            // 초기화 플래그 방어 로직 추가
+            if (!data.isStarted || isTurnChanged) {
                 spokenEvents.clear(); 
                 timeoutTriggered = false;
             }
@@ -712,10 +713,19 @@
             }
             
             updateStatus();
-            if (!timerInterval) startTimerLoop();
+            
+            // 승패가 나지 않은 상태에서 타이머 루프가 없으면 재시작
+            if (!timerInterval && !data.winner) {
+                startTimerLoop();
+            }
 
             if (data.winner) {
-                if (timerInterval) clearInterval(timerInterval);
+                // 핵심 수정 1: 루프 중단뿐만 아니라, interval 변수 자체를 비워줌
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null; 
+                }
+                
                 setTimeout(() => {
                     const winnerName = data.winner === 'black' ? '흑돌' : '백돌';
                     if (data.winReason === 'resign') {
