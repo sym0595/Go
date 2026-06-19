@@ -15,8 +15,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <meta name="google-site-verification" content="fXm9jDvZofcCOtd11ECa365_EAtMH9R3NYFizxGTC3A" />
-
     <style>
         * {
             box-sizing: border-box;
@@ -168,15 +166,8 @@
             font-weight: bold;
             font-size: 11px;
         }
-        .status-online {
-            background-color: #2ecc71;
-            color: #fff;
-            box-shadow: 0 0 6px #2ecc71;
-        }
-        .status-offline {
-            background-color: #e74c3c;
-            color: #fff;
-        }
+        .status-online { background-color: #2ecc71; color: #fff; box-shadow: 0 0 6px #2ecc71; }
+        .status-offline { background-color: #e74c3c; color: #fff; }
 
         .btn-share {
             background: linear-gradient(135deg, #e4a853, #c99243);
@@ -198,37 +189,58 @@
             border-radius: 8px;
         }
 
-        .role-label {
-            font-size: 12px;
-            color: #aaa;
-            font-weight: bold;
-        }
-
-        .role-btn-group {
-            display: flex;
-            gap: 6px;
-        }
+        .role-label { font-size: 12px; color: #aaa; font-weight: bold; }
+        .role-btn-group { display: flex; gap: 6px; }
 
         .btn-role {
-            background: none;
-            border: none;
-            color: #888;
-            padding: 4px 10px;
-            font-size: 12px;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
+            background: none; border: none; color: #888;
+            padding: 4px 10px; font-size: 12px; font-weight: bold;
+            border-radius: 5px; cursor: pointer;
+        }
+        .btn-role.active { background-color: #e4a853; color: #1a1a1a; }
+        .btn-role:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .timer-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 4px;
         }
 
-        .btn-role.active {
-            background-color: #e4a853;
-            color: #1a1a1a;
+        .player-timer {
+            flex: 1;
+            background-color: #111;
+            border-radius: 8px;
+            padding: 8px 12px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .player-timer.active {
+            border-color: #e4a853;
+            box-shadow: 0 0 8px rgba(228, 168, 83, 0.4);
+        }
+
+        .player-timer.black .timer-name { color: #aaa; }
+        .player-timer.white .timer-name { color: #fff; }
+
+        .timer-name { font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+        .timer-time { font-size: 22px; font-weight: bold; font-family: monospace; color: #fff; }
+        .timer-time.danger { color: #e74c3c; animation: pulse 1s infinite; }
+        .timer-periods { font-size: 11px; color: #e4a853; margin-top: 4px; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
         }
 
         .turn-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-top: 4px;
         }
 
         .turn-indicator {
@@ -246,7 +258,6 @@
             background-color: #000;
             border: 1px solid #555;
         }
-
         .turn-badge.white { background-color: #fff; }
 
         .komi-badge {
@@ -292,11 +303,7 @@
             height: 100%;
             touch-action: manipulation;
         }
-
-        .board.locked {
-            opacity: 0.75;
-            cursor: not-allowed;
-        }
+        .board.locked { opacity: 0.75; cursor: not-allowed; }
 
         .intersection {
             position: relative;
@@ -308,23 +315,10 @@
         }
 
         .intersection::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            height: 0;
-            border-top: 1px solid #443016;
-            z-index: 1;
+            content: ''; position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #443016; z-index: 1;
         }
-
         .intersection::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 0;
-            border-left: 1px solid #443016;
-            z-index: 1;
+            content: ''; position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px solid #443016; z-index: 1;
         }
 
         .intersection.edge-top::after { top: 50%; }
@@ -354,36 +348,17 @@
         .stone.white { background: radial-gradient(circle at 30% 30%, #fff, #ddd 70%); border: 0.5px solid #bbb; }
 
         .stone.black.last-move::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 6px;
-            height: 6px;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            background-color: #ffffff;
+            content: ''; position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+            transform: translate(-50%, -50%); border-radius: 50%; background-color: #ffffff;
         }
         .stone.white.last-move::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 6px;
-            height: 6px;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            background-color: #111111;
+            content: ''; position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+            transform: translate(-50%, -50%); border-radius: 50%; background-color: #111111;
         }
 
         .preview-stone {
-            width: 92%;
-            height: 92%;
-            border-radius: 50%;
-            z-index: 2;
-            opacity: 0.5;
-            animation: blink 0.8s infinite alternate;
-            pointer-events: none;
+            width: 92%; height: 92%; border-radius: 50%; z-index: 2; opacity: 0.5;
+            animation: blink 0.8s infinite alternate; pointer-events: none;
         }
         .preview-stone.black { background-color: #000; }
         .preview-stone.white { background-color: #fff; border: 1px solid #bbb; }
@@ -403,62 +378,31 @@
         }
 
         .btn-confirm {
-            width: 100%;
-            height: 50px;
-            background: linear-gradient(135deg, #e4a853, #c99243);
-            color: #1a1a1a;
-            border: none;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
+            width: 100%; height: 50px; background: linear-gradient(135deg, #e4a853, #c99243);
+            color: #1a1a1a; border: none; font-size: 18px; font-weight: bold; border-radius: 10px; cursor: pointer;
         }
+        .btn-confirm:disabled { background: #444; color: #777; cursor: not-allowed; }
+        .btn-confirm.ready-mode { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
+        .btn-confirm.ready-active { background: #34495e; color: #bdc3c7; }
 
-        .btn-confirm:disabled {
-            background: #444;
-            color: #777;
-            cursor: not-allowed;
-        }
-
-        .sub-btn-row {
-            display: flex;
-            gap: 10px;
-            width: 100%;
-        }
-
+        .sub-btn-row { display: flex; gap: 10px; width: 100%; }
         .btn-sub {
-            flex: 1;
-            height: 38px;
-            background-color: #333;
-            color: #ccc;
-            border: 1px solid #444;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
+            flex: 1; height: 38px; background-color: #333; color: #ccc;
+            border: 1px solid #444; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer;
         }
-
-        .btn-sub:disabled {
-            background-color: #222;
-            color: #555;
-            border-color: #2a2a2a;
-            cursor: not-allowed;
-        }
+        .btn-sub:disabled { background-color: #222; color: #555; border-color: #2a2a2a; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="phone-container">
-
     <div id="lobbyScreen" class="lobby-screen">
         <h1 class="lobby-title">바둑과 오목</h1>
         <p class="lobby-subtitle">친구와 함께 실시간으로 즐기세요</p>
 
         <div class="lobby-box">
             <button class="lobby-btn" onclick="createNewRoom()">새로운 방 만들기</button>
-            
             <div style="margin: 20px 0; border-top: 1px dashed #444;"></div>
-            
             <div style="font-size: 12px; color: #888; margin-bottom: 5px;">참여 코드가 있으신가요?</div>
             <div class="lobby-input-row">
                 <input type="number" id="roomCodeInput" class="lobby-input" placeholder="4자리 입력" maxlength="4" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4);">
@@ -483,6 +427,19 @@
             <button class="btn-share" onclick="copyShareLink()">🔗 공유</button>
         </div>
 
+        <div class="timer-container">
+            <div id="boxTimerBlack" class="player-timer black">
+                <div class="timer-name">⚫ 흑돌 <span id="readyStatusBlack"></span></div>
+                <div class="timer-time" id="timeBlack">--:--</div>
+                <div class="timer-periods" id="periodsBlack">대기 중</div>
+            </div>
+            <div id="boxTimerWhite" class="player-timer white">
+                <div class="timer-name">⚪ 백돌 <span id="readyStatusWhite"></span></div>
+                <div class="timer-time" id="timeWhite">--:--</div>
+                <div class="timer-periods" id="periodsWhite">대기 중</div>
+            </div>
+        </div>
+
         <div class="turn-row">
             <div class="turn-indicator">
                 <div id="turnBadge" class="turn-badge"></div>
@@ -503,7 +460,7 @@
     </div>
 
     <div class="control-panel">
-        <button id="btnConfirm" class="btn-confirm" onclick="confirmPlacement()" disabled>➔ 착수 완료</button>
+        <button id="btnConfirm" class="btn-confirm" onclick="handleMainButtonClick()" disabled>➔ 착수 완료</button>
         <div class="sub-btn-row">
             <button id="btnCounting" class="btn-sub" onclick="requestAutoCounting()" disabled>🏁 계가 신청</button>
             <button class="btn-sub" onclick="resignGame()">🏳️ 기권하기</button>
@@ -533,6 +490,12 @@
     let roomRef = null;
     let presenceInterval = null;
 
+    let serverOffset = 0;
+    database.ref('.info/serverTimeOffset').on('value', snap => {
+        serverOffset = snap.val() || 0;
+    });
+    function getServerTime() { return Date.now() + serverOffset; }
+
     const urlParams = new URLSearchParams(window.location.search);
     const urlRoomId = urlParams.get('room');
 
@@ -547,6 +510,7 @@
         userToken = 'u_guest_' + Math.random().toString(36).substr(2, 9);
     }
 
+    let gameData = null; 
     let gameMode = 'baduk'; 
     let boardSize = 19;
     let currentTurn = 'black';
@@ -563,6 +527,11 @@
     let starPoints = [];
     let lastRenderHash = ""; 
 
+    let timerInterval = null;
+    let spokenEvents = new Set();
+    let timeoutTriggered = false;
+    let audioUnlocked = false; 
+
     const dr = [-1, 1, 0, 0]; const dc = [0, 0, -1, 1];
 
     const boardElement = document.getElementById('board');
@@ -576,6 +545,36 @@
     const lblCapture = document.getElementById('lblCapture');
     const btnCounting = document.getElementById('btnCounting');
     const txtOpponentStatus = document.getElementById('txtOpponentStatus');
+
+    document.addEventListener('click', () => {
+        if (!audioUnlocked && window.speechSynthesis) {
+            let u = new SpeechSynthesisUtterance('');
+            window.speechSynthesis.speak(u);
+            audioUnlocked = true;
+        }
+    }, { once: true });
+
+    function speakText(text) {
+        if (!window.speechSynthesis || !audioUnlocked) return;
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'ko-KR';
+        msg.rate = 1.1; 
+        window.speechSynthesis.speak(msg);
+    }
+
+    function getDefaultTimerState(mode) {
+        if (mode === 'baduk') {
+            return {
+                black: { basic: 600000, periods: 3, isByoYomi: false },
+                white: { basic: 600000, periods: 3, isByoYomi: false }
+            };
+        } else {
+            return {
+                black: { basic: 300000, periods: 3, isByoYomi: false },
+                white: { basic: 300000, periods: 3, isByoYomi: false }
+            };
+        }
+    }
 
     function updateStarPoints() {
         starPoints = [];
@@ -594,28 +593,17 @@
 
     function createNewRoom() {
         const newCode = Math.floor(1000 + Math.random() * 9000).toString(); 
-        
         database.ref('go_rooms/' + newCode).once('value', snapshot => {
-            if (snapshot.exists()) {
-                createNewRoom(); 
-            } else {
-                enterRoom(newCode);
-            }
+            if (snapshot.exists()) { createNewRoom(); } else { enterRoom(newCode); }
         });
     }
 
     function joinRoomFromInput() {
         const code = document.getElementById('roomCodeInput').value.trim();
-        if (!code || code.length !== 4) {
-            alert("4자리 방 번호를 입력해주세요.");
-            return;
-        }
+        if (!code || code.length !== 4) { alert("4자리 방 번호를 입력해주세요."); return; }
         database.ref('go_rooms/' + code).once('value', snapshot => {
-            if (snapshot.exists()) {
-                enterRoom(code);
-            } else {
-                alert("존재하지 않거나 게임이 끝난 방 번호입니다.\n새로운 방을 만들어보세요.");
-            }
+            if (snapshot.exists()) enterRoom(code);
+            else alert("존재하지 않거나 게임이 끝난 방 번호입니다.\n새로운 방을 만들어보세요.");
         });
     }
 
@@ -632,7 +620,7 @@
         if(presenceInterval) clearInterval(presenceInterval);
         presenceInterval = setInterval(() => {
             if (myRole !== 'spectator' && roomRef) {
-                roomRef.child('presence/' + myRole).set(Date.now());
+                roomRef.child('presence/' + myRole).set(getServerTime());
             }
         }, 2000);
 
@@ -648,22 +636,25 @@
                     lastMove: null,
                     winner: null,
                     winReason: null, 
-                    players: { black: userToken }
+                    players: { black: userToken },
+                    timerState: getDefaultTimerState(gameMode),
+                    turnStartTime: 0, 
+                    isStarted: false, 
+                    readyStatus: { black: false, white: false }
                 });
                 return;
             }
+
+            const isTurnChanged = data.currentTurn !== currentTurn;
+            gameData = data; 
 
             if (data.players.black === userToken) { myRole = 'black'; txtMyRole.textContent = "흑돌 (나)"; } 
             else if (data.players.white === userToken) { myRole = 'white'; txtMyRole.textContent = "백돌 (나)"; } 
             else if (!data.players.white) { 
                 roomRef.child('players/white').set(userToken); 
-                myRole = 'white'; 
-                txtMyRole.textContent = "백돌 (나)"; 
+                myRole = 'white'; txtMyRole.textContent = "백돌 (나)"; 
             } 
-            else { 
-                myRole = 'spectator'; 
-                txtMyRole.textContent = "관전 모드"; 
-            }
+            else { myRole = 'spectator'; txtMyRole.textContent = "관전 모드"; }
 
             gameMode = data.gameMode || 'baduk';
             const targetSize = (gameMode === 'omok') ? 15 : 19;
@@ -679,11 +670,16 @@
             koCoordinate = data.koCoordinate;
             lastMove = data.lastMove || null; 
 
+            if (isTurnChanged) {
+                spokenEvents.clear(); 
+                timeoutTriggered = false;
+            }
+
             if (data.players && data.presence) {
                 const opponentRole = (myRole === 'black') ? 'white' : 'black';
                 const opponentHasToken = data.players[opponentRole];
                 const lastPing = data.presence[opponentRole];
-                const now = Date.now();
+                const now = getServerTime();
 
                 if (opponentHasToken) {
                     if (lastPing && (now - lastPing < 6000)) {
@@ -694,50 +690,230 @@
                         txtOpponentStatus.className = "status-badge status-offline";
                     }
                 } else {
-                    // 🌟 수정됨: 헷갈리지 않게 문구 변경 🌟
                     txtOpponentStatus.textContent = "🔴 상대방 미접속";
                     txtOpponentStatus.className = "status-badge status-offline";
                 }
-            } else {
-                // 🌟 수정됨: 헷갈리지 않게 문구 변경 🌟
-                txtOpponentStatus.textContent = "🔴 상대방 미접속";
-                txtOpponentStatus.className = "status-badge status-offline";
+            }
+
+            const rStatus = data.readyStatus || { black: false, white: false };
+            document.getElementById('readyStatusBlack').textContent = data.isStarted ? "" : (rStatus.black ? " (준비완료)" : " (대기중)");
+            document.getElementById('readyStatusWhite').textContent = data.isStarted ? "" : (rStatus.white ? " (준비완료)" : " (대기중)");
+            if(!data.isStarted) {
+                document.getElementById('readyStatusBlack').style.color = rStatus.black ? "#2ecc71" : "#aaa";
+                document.getElementById('readyStatusWhite').style.color = rStatus.white ? "#2ecc71" : "#aaa";
             }
 
             updateStarPoints();
             
-            const currentRenderHash = (data.gameMode || 'baduk') + data.gameState + data.currentTurn + JSON.stringify(data.lastMove || null);
+            const currentRenderHash = (data.gameMode || 'baduk') + data.gameState + data.currentTurn + JSON.stringify(data.lastMove || null) + data.isStarted;
             if (lastRenderHash !== currentRenderHash) {
                 renderBoardFromState();
                 lastRenderHash = currentRenderHash; 
             }
             
             updateStatus();
+            if (!timerInterval) startTimerLoop();
 
             if (data.winner) {
+                if (timerInterval) clearInterval(timerInterval);
                 setTimeout(() => {
                     const winnerName = data.winner === 'black' ? '흑돌' : '백돌';
-                    
                     if (data.winReason === 'resign') {
                         const loserName = data.winner === 'black' ? '백돌' : '흑돌';
                         alert(`🏳️ [기권 승] ${loserName}이(가) 기권하여 ${winnerName}이(가) 승리했습니다!\n확인을 누르면 판이 자동으로 초기화됩니다.`);
+                    } else if (data.winReason === 'timeout') {
+                        const loserName = data.winner === 'black' ? '백돌' : '흑돌';
+                        alert(`⏰ [시간 초과] ${loserName}의 시간이 모두 소진되어 ${winnerName}이(가) 승리했습니다!\n확인을 누르면 판이 자동으로 초기화됩니다.`);
                     } else {
                         alert(`🎉 [오목 승리] ${winnerName} 승리!\n확인을 누르면 판이 자동으로 초기화됩니다.`);
                     }
-                    
-                    if (myRole === data.winner) {
-                        syncResetGame();
-                    }
+                    if (myRole === data.winner) syncResetGame();
                 }, 100);
             }
         });
     }
 
-    function copyShareLink() {
-        if (!roomId) {
-            alert("방에 입장한 후에 공유할 수 있습니다.");
+    function handleMainButtonClick() {
+        if (!gameData) return;
+        
+        if (!gameData.isStarted) {
+            if (myRole === 'spectator') return;
+            const currentReady = gameData.readyStatus ? !!gameData.readyStatus[myRole] : false;
+            roomRef.child('readyStatus/' + myRole).set(!currentReady);
             return;
         }
+
+        confirmPlacement();
+    }
+
+    function formatTime(ms) {
+        if (ms < 0) ms = 0;
+        let totalSeconds = Math.ceil(ms / 1000);
+        let m = Math.floor(totalSeconds / 60);
+        let s = totalSeconds % 60;
+        return `${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
+    }
+
+    function updateTimerUI(color, isByoYomi, timeMs, periodsLeft) {
+        const timeEl = color === 'black' ? document.getElementById('timeBlack') : document.getElementById('timeWhite');
+        const periodsEl = color === 'black' ? document.getElementById('periodsBlack') : document.getElementById('periodsWhite');
+        const boxEl = color === 'black' ? document.getElementById('boxTimerBlack') : document.getElementById('boxTimerWhite');
+
+        const isTimerRunning = gameData && gameData.isStarted && gameData.turnStartTime > 0 && currentTurn === color && !gameData.winner;
+        boxEl.classList.toggle('active', isTimerRunning);
+
+        if (isByoYomi) {
+            let s = Math.ceil(timeMs / 1000);
+            timeEl.textContent = s.toString();
+            timeEl.classList.add('danger');
+            periodsEl.textContent = `초읽기 ${periodsLeft}회`;
+        } else {
+            timeEl.textContent = formatTime(timeMs);
+            timeEl.classList.remove('danger');
+            let byoSec = (gameMode === 'baduk') ? 30 : 15;
+            periodsEl.textContent = `기본시간 (${byoSec}초 초읽기 ${periodsLeft}회)`;
+        }
+    }
+
+    function startTimerLoop() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (!roomId || !gameData || gameData.winner) return;
+
+            if (!gameData.isStarted) {
+                let badukBasic = (gameMode === 'baduk') ? 600000 : 300000;
+                updateTimerUI('black', false, gameData.timerState?.black?.basic || badukBasic, gameData.timerState?.black?.periods || 3);
+                updateTimerUI('white', false, gameData.timerState?.white?.basic || badukBasic, gameData.timerState?.white?.periods || 3);
+                return;
+            }
+
+            let byoLengthMs = (gameMode === 'baduk') ? 30000 : 15000;
+            const now = getServerTime();
+            let elapsed = now - gameData.turnStartTime;
+
+            let isFirstMoveOfGame = true;
+            for (let r = 0; r < boardSize; r++) {
+                if (gameState[r].some(cell => cell !== null)) { isFirstMoveOfGame = false; break; }
+            }
+
+            if (isFirstMoveOfGame) {
+                elapsed -= 3000; 
+                if (elapsed < 0) elapsed = 0;
+            }
+
+            let activeTimer = JSON.parse(JSON.stringify(gameData.timerState[currentTurn]));
+            let justEnteredByoYomi = false;
+            let newPeriod = false;
+
+            if (!activeTimer.isByoYomi) {
+                activeTimer.basic -= elapsed;
+                if (activeTimer.basic <= 0) {
+                    activeTimer.isByoYomi = true;
+                    elapsed = Math.abs(activeTimer.basic); 
+                    activeTimer.basic = 0;
+                    justEnteredByoYomi = true;
+                }
+            }
+
+            if (activeTimer.isByoYomi) {
+                while (elapsed >= byoLengthMs && activeTimer.periods >= 0) {
+                    elapsed -= byoLengthMs;
+                    activeTimer.periods--;
+                    newPeriod = true;
+                    spokenEvents.clear(); 
+                }
+
+                if (activeTimer.periods < 0) {
+                    if (!timeoutTriggered) triggerTimeoutLoss();
+                    updateTimerUI(currentTurn, true, 0, 0);
+                    return;
+                }
+
+                let msLeft = byoLengthMs - Math.max(0, elapsed);
+                let secLeft = Math.ceil(msLeft / 1000);
+
+                if (justEnteredByoYomi && !spokenEvents.has('start')) {
+                    speakText("초읽기를 시작합니다.");
+                    spokenEvents.add('start');
+                    
+                    if (activeTimer.periods === 2) speakText("두 번 남았습니다.");
+                    else if (activeTimer.periods === 1) speakText("마지막입니다.");
+                    spokenEvents.add('period_' + activeTimer.periods);
+                } 
+                else if (newPeriod && !spokenEvents.has('period_' + activeTimer.periods)) {
+                    if (activeTimer.periods === 2) speakText("두 번 남았습니다.");
+                    else if (activeTimer.periods === 1) speakText("마지막입니다.");
+                    spokenEvents.add('period_' + activeTimer.periods);
+                }
+
+                if (secLeft <= 10 && secLeft > 0 && !spokenEvents.has('sec_' + secLeft)) {
+                    speakText(secLeft.toString());
+                    spokenEvents.add('sec_' + secLeft);
+                }
+
+                updateTimerUI(currentTurn, true, msLeft, activeTimer.periods);
+            } else {
+                updateTimerUI(currentTurn, false, activeTimer.basic, activeTimer.periods);
+            }
+
+            let waitingColor = currentTurn === 'black' ? 'white' : 'black';
+            let waitingTimer = gameData.timerState[waitingColor];
+            let displayMs = waitingTimer.isByoYomi ? byoLengthMs : waitingTimer.basic;
+            updateTimerUI(waitingColor, waitingTimer.isByoYomi, displayMs, waitingTimer.periods);
+
+        }, 100);
+    }
+
+    function triggerTimeoutLoss() {
+        if (timeoutTriggered || myRole === 'spectator') return; 
+        timeoutTriggered = true;
+        const opponentRole = (currentTurn === 'black') ? 'white' : 'black';
+        roomRef.update({ winner: opponentRole, winReason: 'timeout' }).catch(()=>{});
+    }
+
+    function calculateNextTimerState() {
+        if (!gameData || !gameData.timerState) return getDefaultTimerState(gameMode);
+        
+        let isFirstMoveOfGame = true;
+        for (let r = 0; r < boardSize; r++) {
+            if (gameState[r].some(cell => cell !== null)) { isFirstMoveOfGame = false; break; }
+        }
+
+        const now = getServerTime();
+        let elapsed = now - gameData.turnStartTime;
+        if (isFirstMoveOfGame) {
+            elapsed -= 3000;
+            if (elapsed < 0) elapsed = 0;
+        }
+
+        let myTimer = JSON.parse(JSON.stringify(gameData.timerState[currentTurn]));
+        let byoLengthMs = gameMode === 'baduk' ? 30000 : 15000;
+
+        if (!myTimer.isByoYomi) {
+            myTimer.basic -= elapsed;
+            if (myTimer.basic <= 0) {
+                myTimer.isByoYomi = true;
+                let overflow = Math.abs(myTimer.basic);
+                myTimer.basic = 0;
+                while (overflow >= byoLengthMs) {
+                    overflow -= byoLengthMs;
+                    myTimer.periods--;
+                }
+            }
+        } else {
+            while (elapsed >= byoLengthMs) {
+                elapsed -= byoLengthMs;
+                myTimer.periods--;
+            }
+        }
+
+        let nextTimerState = JSON.parse(JSON.stringify(gameData.timerState));
+        nextTimerState[currentTurn] = myTimer;
+        return nextTimerState;
+    }
+
+    function copyShareLink() {
+        if (!roomId) { alert("방에 입장한 후에 공유할 수 있습니다."); return; }
         const perfectUrl = window.location.origin + window.location.pathname + `?room=${roomId}`;
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(perfectUrl).then(() => {
@@ -756,6 +932,8 @@
         if (previewStoneEl) previewStoneEl = null;
         selectedCell = null;
 
+        const isInteractable = gameData && gameData.isStarted;
+
         for (let r = 0; r < boardSize; r++) {
             for (let c = 0; c < boardSize; c++) {
                 const intersection = document.createElement('div');
@@ -767,27 +945,23 @@
                 if (c === boardSize - 1) intersection.classList.add('edge-right');
 
                 if (starPoints.some(pt => pt.r === r && pt.c === c)) intersection.classList.add('star-point');
-
-                intersection.dataset.row = r;
-                intersection.dataset.col = c;
+                intersection.dataset.row = r; intersection.dataset.col = c;
 
                 if (gameState && gameState[r] && gameState[r][c] !== null) {
                     const stone = document.createElement('div');
                     stone.classList.add('stone', gameState[r][c], 'placed');
-                    
-                    if (lastMove && lastMove.r === r && lastMove.c === c) {
-                        stone.classList.add('last-move');
-                    }
-                    
+                    if (lastMove && lastMove.r === r && lastMove.c === c) stone.classList.add('last-move');
                     intersection.appendChild(stone);
                 } else {
-                    intersection.addEventListener('click', () => selectIntersection(r, c, intersection));
+                    if (isInteractable) {
+                        intersection.addEventListener('click', () => selectIntersection(r, c, intersection));
 
-                    if (prevSelected && prevSelected.r === r && prevSelected.c === c && currentTurn === myRole) {
-                        selectedCell = { r: r, c: c, element: intersection };
-                        previewStoneEl = document.createElement('div');
-                        previewStoneEl.classList.add('preview-stone', currentTurn);
-                        intersection.appendChild(previewStoneEl);
+                        if (prevSelected && prevSelected.r === r && prevSelected.c === c && currentTurn === myRole) {
+                            selectedCell = { r: r, c: c, element: intersection };
+                            previewStoneEl = document.createElement('div');
+                            previewStoneEl.classList.add('preview-stone', currentTurn);
+                            intersection.appendChild(previewStoneEl);
+                        }
                     }
                 }
                 boardElement.appendChild(intersection);
@@ -796,6 +970,7 @@
     }
 
     function selectIntersection(row, col, element) {
+        if (!gameData || !gameData.isStarted) return;
         if (currentTurn !== myRole || myRole === 'spectator') return; 
         if (previewStoneEl) previewStoneEl.remove();
 
@@ -810,16 +985,14 @@
         const { r: row, c: col } = selectedCell;
 
         if (gameMode === 'omok') {
-            if (currentTurn === 'black') {
-                if (checkRenjuFouls(row, col)) {
-                    if (previewStoneEl) { previewStoneEl.remove(); previewStoneEl = null; }
-                    selectedCell = null; return;
-                }
+            if (currentTurn === 'black' && checkRenjuFouls(row, col)) {
+                if (previewStoneEl) { previewStoneEl.remove(); previewStoneEl = null; }
+                selectedCell = null; return;
             }
 
             gameState[row][col] = currentTurn;
-
             let isWin = false;
+            
             if (currentTurn === 'white') {
                 for (let i = 0; i < 4; i++) { if (countContinuous(row, col, i, 'white') >= 5) isWin = true; }
             } else {
@@ -828,31 +1001,27 @@
 
             const opponentTurn = currentTurn === 'black' ? 'white' : 'black';
             const nextMoveInfo = { r: row, c: col };
+            let nextTimerState = calculateNextTimerState();
+            let nextStartTime = firebase.database.ServerValue.TIMESTAMP;
 
             if (isWin) {
                 if(roomRef) {
                     roomRef.update({
-                        gameState: JSON.stringify(gameState), 
-                        lastMove: nextMoveInfo,
-                        winner: currentTurn,
-                        winReason: 'gomoku' 
+                        gameState: JSON.stringify(gameState), lastMove: nextMoveInfo,
+                        winner: currentTurn, winReason: 'gomoku',
+                        timerState: nextTimerState, turnStartTime: nextStartTime
                     }).catch(()=>{});
                 }
-                
-                currentTurn = opponentTurn;
-                updateStatus();
-                renderBoardFromState();
+                currentTurn = opponentTurn; updateStatus(); renderBoardFromState();
                 return; 
             }
 
-            currentTurn = opponentTurn;
-            updateStatus();
-            renderBoardFromState();
-
+            currentTurn = opponentTurn; updateStatus(); renderBoardFromState();
             if(roomRef) {
                 roomRef.update({
                     gameState: JSON.stringify(gameState), currentTurn: opponentTurn,
-                    capturedStones: capturedStones, koCoordinate: null, lastMove: nextMoveInfo
+                    capturedStones: capturedStones, koCoordinate: null, lastMove: nextMoveInfo,
+                    timerState: nextTimerState, turnStartTime: nextStartTime
                 }).catch(()=>{});
             }
         } 
@@ -861,8 +1030,7 @@
 
             gameState[row][col] = currentTurn;
             const opponentTurn = currentTurn === 'black' ? 'white' : 'black';
-            const currentCaptured = [];
-            const groupsToCapture = [];
+            const currentCaptured = []; const groupsToCapture = [];
 
             for (let i = 0; i < 4; i++) {
                 const nr = row + dr[i], nc = col + dc[i];
@@ -891,48 +1059,33 @@
             }
 
             let nextKo = null;
-            if (currentCaptured.length === 1 && ownGroup.length === 1) {
-                nextKo = { r: currentCaptured[0].r, c: currentCaptured[0].c };
-            }
+            if (currentCaptured.length === 1 && ownGroup.length === 1) nextKo = { r: currentCaptured[0].r, c: currentCaptured[0].c };
 
             const nextMoveInfo = { r: row, c: col };
-            currentTurn = opponentTurn;
-            updateStatus();
-            renderBoardFromState();
+            let nextTimerState = calculateNextTimerState();
+            let nextStartTime = firebase.database.ServerValue.TIMESTAMP;
+            
+            currentTurn = opponentTurn; updateStatus(); renderBoardFromState();
 
             if(roomRef) {
                 roomRef.update({
                     gameState: JSON.stringify(gameState), currentTurn: opponentTurn,
-                    capturedStones: capturedStones, koCoordinate: nextKo, lastMove: nextMoveInfo
+                    capturedStones: capturedStones, koCoordinate: nextKo, lastMove: nextMoveInfo,
+                    timerState: nextTimerState, turnStartTime: nextStartTime
                 }).catch(()=>{});
             }
         }
     }
 
     function resignGame() {
-        if (!roomId) return; 
-
-        if (myRole === 'spectator') {
-            alert("관전자는 기권할 수 없습니다.");
-            return;
-        }
-
+        if (!roomId || myRole === 'spectator') return;
+        if (!gameData || !gameData.isStarted) { alert("대국 시작 전에는 기권할 수 없습니다."); return; }
         const isOpponentOffline = document.getElementById('txtOpponentStatus').classList.contains('status-offline');
-
-        if (isOpponentOffline) {
-            alert("상대방이 입장한 상태에서만 기권할 수 있습니다.");
-            return; 
-        }
+        if (isOpponentOffline) { alert("상대방이 입장한 상태에서만 기권할 수 있습니다."); return; }
 
         if (confirm("정말로 기권하시겠습니까?\n패배로 기록되며 판이 초기화됩니다.")) {
             const opponentRole = (myRole === 'black') ? 'white' : 'black';
-            
-            if(roomRef) {
-                roomRef.update({
-                    winner: opponentRole, 
-                    winReason: 'resign' 
-                }).catch(()=>{});
-            }
+            if(roomRef) roomRef.update({ winner: opponentRole, winReason: 'resign' }).catch(()=>{});
         }
     }
 
@@ -1029,15 +1182,53 @@
     }
 
     function updateStatus() {
-        if (!roomId) return; 
+        if (!roomId || !gameData) return; 
 
         capByBlackEl.textContent = capturedStones.black;
         capByWhiteEl.textContent = capturedStones.white;
+
+        document.getElementById('btnModeBaduk').disabled = gameData.isStarted;
+        document.getElementById('btnModeOmok').disabled = gameData.isStarted;
+
+        const rStatus = gameData.readyStatus || { black: false, white: false };
+        if (!gameData.isStarted && rStatus.black && rStatus.white && myRole === 'black') {
+            roomRef.update({ isStarted: true, turnStartTime: firebase.database.ServerValue.TIMESTAMP });
+        }
+
+        if (!gameData.isStarted) {
+            turnText.textContent = "상호 준비 완료 시 대국이 시작됩니다.";
+            boardElement.classList.add('locked');
+            btnCounting.disabled = true;
+
+            if (myRole === 'spectator') {
+                btnConfirm.disabled = true;
+                btnConfirm.classList.remove('ready-mode', 'ready-active');
+                btnConfirm.textContent = "플레이어 대기 중 (관전)";
+            } else {
+                btnConfirm.disabled = false;
+                const iAmReady = !!rStatus[myRole];
+                btnConfirm.classList.add('ready-mode');
+                btnConfirm.classList.toggle('ready-active', iAmReady);
+                btnConfirm.textContent = iAmReady ? "준비 완료" : "대국 준비";
+            }
+            return;
+        }
+
+        btnConfirm.classList.remove('ready-mode', 'ready-active');
         const isMyTurn = (currentTurn === myRole);
+
+        let isFirstMoveOfGame = true;
+        for (let r = 0; r < boardSize; r++) {
+            if (gameState[r].some(cell => cell !== null)) { isFirstMoveOfGame = false; break; }
+        }
 
         if (currentTurn === 'black') {
             turnBadge.classList.remove('white');
-            turnText.textContent = isMyTurn ? '흑돌 차례 (당신)' : '흑돌 차례';
+            if (isFirstMoveOfGame) {
+                turnText.textContent = isMyTurn ? '⚫ 대국 시작! 흑돌 차례 (당신)' : '⚫ 대국 시작! 흑돌 차례';
+            } else {
+                turnText.textContent = isMyTurn ? '흑돌 차례 (당신)' : '흑돌 차례';
+            }
         } else {
             turnBadge.classList.add('white');
             turnText.textContent = isMyTurn ? '백돌 차례 (당신)' : '백돌 차례';
@@ -1061,7 +1252,7 @@
     }
 
     function syncGameMode(mode) {
-        if (!roomId) return;
+        if (!roomId || (gameData && gameData.isStarted)) return;
         const size = mode === 'omok' ? 15 : 19;
         gameMode = mode; boardSize = size;
         gameState = Array(size).fill(null).map(() => Array(size).fill(null));
@@ -1076,8 +1267,10 @@
             roomRef.update({
                 gameMode: mode, gameState: JSON.stringify(gameState),
                 currentTurn: 'black', capturedStones: capturedStones, koCoordinate: null, lastMove: null,
-                winner: null,
-                winReason: null 
+                winner: null, winReason: null,
+                timerState: getDefaultTimerState(mode),
+                turnStartTime: 0, isStarted: false,
+                readyStatus: { black: false, white: false }
             }).catch(()=>{});
         }
     }
@@ -1092,8 +1285,10 @@
             roomRef.update({
                 gameState: JSON.stringify(gameState), currentTurn: 'black',
                 capturedStones: { black: 0, white: 0 }, koCoordinate: null, lastMove: null,
-                winner: null,
-                winReason: null 
+                winner: null, winReason: null,
+                timerState: getDefaultTimerState(gameMode),
+                turnStartTime: 0, isStarted: false,
+                readyStatus: { black: false, white: false }
             }).catch(()=>{});
         }
     }
